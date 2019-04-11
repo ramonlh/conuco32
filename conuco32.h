@@ -26,12 +26,15 @@ void ICACHE_FLASH_ATTR filesHTML()
   printP(c(tclass), ig, tnormal, mayor);
   File dir = SPIFFS.open("/");
   File f=dir.openNextFile("r");
+//    File dir=SPIFFS.open(barra);
+//    File file=dir.openNextFile();
+//    if (testfiles) { while (file) { Serial.print(file.name()); Serial.print(b); Serial.println(file.size()); file=dir.openNextFile(); }}
   while (f)   {
     printP(tr, td, href_i, comillas, letrad, letraw);
     printP(interr, letraf, ig);
-    msg=msg+dir.name();
+    msg=msg+f.name();
     printP(comillas, mayor);
-    msg=msg+dir.name();
+    msg=msg+f.name();
     printP(href_f, td_f, td);
     printI(f.size());
     printP(td_f, tr_f);

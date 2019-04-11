@@ -3,7 +3,7 @@
 typedef struct {byte pro[6]; unsigned long code[6]; int len[6];} rftype;   // 42 bytes
 typedef struct {byte proon[18]; unsigned long codeon[18]; int lenon[18]; byte prooff[18]; unsigned long codeoff[18]; int lenoff[18];} code433type;   // 252 bytes
 typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; int di[2],ds[2]; 
-                long tdi[2],tdo[2]; char mac[13]; char idmyj[10]; float dhtdata[2][2]; } conucodata;
+                long tdi[2],tdo[2]; char mac[13]; char idmyj[10]; float dhtdata[4][2]; } conucodata;
 
   typedef struct {    // datos configuración
                 rftype rfkeys;
@@ -34,7 +34,7 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 int TempDesactPrg=600;            // 2 bytes, tiempo desactivacion programacion en segundos, se compara con countfaulttime
                 unsigned long contadores[maxED]={0,0,0,0};  // 16 bytes, número de veces encendido/apagado de entradas digitales
                 byte actPrg[maxPrg]={0,0};        // 2 bytes, programas activos: 0/1
-                int webPort=88;                   // 2 bytes, puerto servidor web
+                int webPort=portdefault;          // 2 bytes, puerto servidor web
                 byte bshowbypanel[maxpaneles][5]; // 50 bytes, tabla para asignar señales a paneles
                 /********** variables wifi *************/
                 byte wifimode=1;                  // 1 byte, 0:STA, 1: AP (default), 2: AP+STA
@@ -119,18 +119,25 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 unsigned int tempmqtt[22]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // período de envío mqtt para cada señal
                                           // 8 temp, 2 anal, 4 ent. dig, 8 sal. dig. 
                 byte modohp=0;  // modo bomba de calor = 1;
+                byte ngpio[22]={25,25,25,25,25,25,25,25,27,4,35,34,39,36,17,23,22,21,19,5,18,16};  // pin para cada señal 8x1-wire,2xEA,4xDI,8xDO,(4xSP(MI,MO,CLK,CS))
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes
 
-    byte edPin[maxED]={I0,I1,I2,I3};   // pines entradas digitales
-    byte sdPin[maxSD]={O0,O1,O2,O3,O4,O5,O6,O7}; // pines salidas digitales/relés
-    byte owPin=W0;             // pin para DS18B20
-//    byte rx433=2;              // en el Wemos D1 Mini se usa el 2 para el LED
-//    byte ledSt=15;             // Led estado Wemos=2, Electrodragon=16
-//    byte tx433=15;             // NO USADO 
-//    byte bt2Pin=0;             // botón 2
-    const char idpin[8][4]={"t0","t1","t2","a0","e0","e1","s0","s1"};
+    byte edPin[maxED]={I0,I1,I2,I3};                // pines entradas digitales
+    byte sdPin[maxSD]={O0,O1,O2,O3,O4,O5,O6,O7};    // pines salidas digitales/relés
+    byte anaPin[maxEA]={ADC0,ADC1};                 // pines entradas analógicas
+    byte i2cPin[2]={SDA,SCL};                       // pines I2C
+    byte spiPin[4]={SPIMISO,SPIMOSI,SPICLK,SPICS};  // pines SPI
+    byte txrxPin[2]={TX,RX};                        // pines serial port
+    byte rfPin[2]={RX433,TX433};                    // pines RF 433
+    byte adcPin[2]={ADC0,ADC1};                     // pines ADC
+    byte dacPin[2]={DAC0,DAC1};                     // pines DAC
+    byte dhtPin[2]={DHT0,DHT1};                     // pines DHT
+    byte owPin=W0;                                  // pin para DS18B20
+    const byte listgpio[27]={1,2,3,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33,34,35,36,37,38,39};
+    const char idpin[25][4]={"t0","t1","t2","t3","t4","t5","t6","t7","a0","a1","e0","e1","e2","e3","s0","s1","s2","s3","s4","s5","s6","s7","id","ip","ipp"};
+        // hasta el 22 son pines
 
 //////  tratamiento de bits /////////////////////
 const byte tab[8] = {1,2,4,8,16,32,64,128}; // 8
@@ -161,7 +168,7 @@ uint8_t addr1Wire[maxTemp][8];
 unsigned long mact1,mact2,mact10,mact60,mact3600,mact86400; 
 unsigned long tempact[maxSD];   // 8x4, 32 bytes, tiempos desde activación. Al llegar a tempdef se desactiva la salida.
 unsigned long tempdes[maxSD];   // 8x4, 32 bytes, tiempos desde desactivación. Al llegar a tempdef se activa la salida.
-byte tipoEDtemp[maxED]={0,0,0,0};   // 4x1, 4 bytes, tipo de la entrada digital: 0=ON/OFF, 1=DHT11,2=DHT21,3=DHT22,4=RS485 RX/TX
+byte tipoEDtemp[maxED]={0,0,0,0};   // 4x1, 4 bytes, tipo de la entrada digital: 0=ON/OFF, 1=OFF/ON, 2=DHT11,3=DHT21,4=DHT22,5=RS485 RX/TX, ...
 int nAP=0;                      // 2 bytes, redes encontradas con scanAP
 int nAPact=0;                   // 2 bytes, redes actual
 int countfaulttime=29999;       // veces que ha fallado la sincronización
@@ -242,7 +249,7 @@ byte lastpro=0;
 long lastcode=0;
 int lastlen=0;
 byte paract=0;
-float dhtdata[2][2];
+float dhtdata[4][2];
 byte panelact=0;
 byte prisalrem=0;
 byte priremio=0;
