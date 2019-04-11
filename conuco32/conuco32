@@ -1,0 +1,34 @@
+
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
+    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+    <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+        <title>KiCad BOM Example 5</title>
+    </head>
+    <body>
+    <h1>C:\Users\Ramón\Documents\prueba\conuco32\conuco32.sch</h1>
+    <p>04/04/2019 20:18:50</p>
+    <p>Eeschema (5.1.0)-1</p>
+    <p><b>Component Count:</b>18</p>
+    <table>
+    <tr><th style='width:640px'>Ref</th><th>Qnty</th><th>Value</th><th>Part</th><th>Footprint</th><th>Description</th><th>Vendor</th></tr>
+    <tr><td>C1</td><td>1</td><td>100n</td><td>Device:C</td><td>Capacitor_THT:C_Disc_D3.0mm_W2.0mm_P2.50mm</td><td>Unpolarized capacitor</td><td></td></tr>
+    <tr><td>C2</td><td>1</td><td>100mF</td><td>Device:CP</td><td>Capacitor_THT:CP_Radial_D8.0mm_P2.50mm</td><td>Polarized capacitor</td><td></td></tr>
+    <tr><td>J1</td><td>1</td><td>Screw_Terminal_01x02</td><td>Connector:Screw_Terminal_01x02</td><td>TerminalBlock:TerminalBlock_bornier-3_P5.08mm</td><td>Generic screw terminal, single row, 01x02, script generated (kicad-library-utils/schlib/autogen/connector/)</td><td></td></tr>
+    <tr><td>J2</td><td>1</td><td>Screw_Terminal_01x05</td><td>Connector:Screw_Terminal_01x05</td><td>TerminalBlock:TerminalBlock_bornier-5_P5.08mm</td><td>Generic screw terminal, single row, 01x05, script generated (kicad-library-utils/schlib/autogen/connector/)</td><td></td></tr>
+    <tr><td>J3</td><td>1</td><td>Screw_Terminal_01x04</td><td>Connector:Screw_Terminal_01x04</td><td>TerminalBlock:TerminalBlock_bornier-4_P5.08mm</td><td>Generic screw terminal, single row, 01x04, script generated (kicad-library-utils/schlib/autogen/connector/)</td><td></td></tr>
+    <tr><td>J4, J5, J6</td><td>3</td><td>Screw_Terminal_01x03</td><td>Connector:Screw_Terminal_01x03</td><td>TerminalBlock:TerminalBlock_bornier-3_P5.08mm</td><td>Generic screw terminal, single row, 01x03, script generated (kicad-library-utils/schlib/autogen/connector/)</td><td></td></tr>
+    <tr><td>J7</td><td>1</td><td>Conn_01x08_Female</td><td>Connector:Conn_01x08_Female</td><td></td><td>Generic connector, single row, 01x08, script generated (kicad-library-utils/schlib/autogen/connector/)</td><td></td></tr>
+    <tr><td>K1, K2</td><td>2</td><td>FINDER-34.51</td><td>Relay:FINDER-34.51</td><td>Relay_THT:Relay_SPDT_Finder_34.51_Vertical</td><td>Ultra-slim 1 Pole - 6A SPDT relay</td><td></td></tr>
+    <tr><td>PS1</td><td>1</td><td>HLK-PM01</td><td>Converter_ACDC:HLK-PM01</td><td>Converter_ACDC:Converter_ACDC_HiLink_HLK-PMxx</td><td>Compact AC/DC board mount power module 3W 5V</td><td></td></tr>
+    <tr><td>RN1</td><td>1</td><td>4x330</td><td>Device:R_Pack04</td><td>Package_DIP:DIP-8_W7.62mm</td><td>4 resistor network, parallel topology, DIP package</td><td></td></tr>
+    <tr><td>RN2</td><td>1</td><td>4x10K</td><td>Device:R_Network04</td><td>Resistor_THT:R_Array_SIP5</td><td>4 resistor network, star topology, bussed resistors, small symbol</td><td></td></tr>
+    <tr><td>RV1</td><td>1</td><td>Varistor</td><td>Device:Varistor</td><td>Varistor:RV_Disc_D9mm_W3.3mm_P5mm</td><td>Voltage dependent resistor</td><td></td></tr>
+    <tr><td>U1</td><td>1</td><td>PC847</td><td>Isolator:PC847</td><td>Package_DIP:DIP-16_W7.62mm</td><td>DC Quad Optocoupler, Vce 35V, CTR 50-300%, DIP16</td><td></td></tr>
+    <tr><td>U2</td><td>1</td><td>ULN2803A</td><td>Transistor_Array:ULN2803A</td><td>Package_DIP:DIP-18_W7.62mm</td><td>Darlington Transistor Arrays, SOIC18/DIP18</td><td></td></tr>
+    <tr><td>U3</td><td>1</td><td>ESP32-DEVKITC-32D-Conuco</td><td>ESP32-DEVKITC-32D:ESP32-DEVKITC-32D-Conuco</td><td>conucos:MODULE_ESP32-DEVKIT-32D-Conuco</td><td></td><td></td></tr><!--TABLEROW-->
+    </table>
+    </body>
+</html>
+    
