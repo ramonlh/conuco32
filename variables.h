@@ -2,7 +2,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 typedef struct {byte pro[6]; unsigned long code[6]; int len[6];} rftype;   // 42 bytes
 typedef struct {byte proon[18]; unsigned long codeon[18]; int lenon[18]; byte prooff[18]; unsigned long codeoff[18]; int lenoff[18];} code433type;   // 252 bytes
-typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; int di[2],ds[2]; 
+typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; int di[2],ds[2]; 
                 long tdi[2],tdo[2]; char mac[13]; char idmyj[10]; float dhtdata[4][2]; } conucodata;
 
   typedef struct {    // datos configuración
@@ -21,7 +21,7 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 byte usepassDev=0;                // 1 byte, 0 no usar password,  1 usar password
                 char userDev[20]="admin";         // 20 bytes, usuario device
                 char passDev[20]="admin";         // 20 bytes, password device
-                byte modo45=0;                    // modo pines 4 y 5.
+                byte modo45=0;                    // modo pines 4 y 5. NO USADO
                 byte iottweetenable=0;            // enable/disable iottweet
                 byte bprgval[1]={0};              // 1 byte, valor a poner en cada programación, on/off
                 float factorA[maxEA]={1.0,1.0};   // 2x4 factor conversión analógicas locales
@@ -35,7 +35,7 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 unsigned long contadores[maxED]={0,0,0,0};  // 16 bytes, número de veces encendido/apagado de entradas digitales
                 byte actPrg[maxPrg]={0,0};        // 2 bytes, programas activos: 0/1
                 int webPort=portdefault;          // 2 bytes, puerto servidor web
-                byte bshowbypanel[maxpaneles][5]; // 50 bytes, tabla para asignar señales a paneles
+                byte LIBRES1[10][5];              // 50 bytes, LIBRES
                 /********** variables wifi *************/
                 byte wifimode=1;                  // 1 byte, 0:STA, 1: AP (default), 2: AP+STA
                 char ssidSTA[20]="SSID_AP";       // 20 bytes, SSID en modo AP
@@ -55,8 +55,7 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 byte bescenaact[maxEsc][5];       // 2 x 5 = 10 bytes, activación de escenas  (valor >0, ni ON ni OFF), conjuntamente con bescena
                 byte bactfec[1]={0};              // 1 byte, por bits, uno por programa
                 byte fecsal[maxPrgFec]={0,0,0,0}; // 4 bytes, salida a actuar en cada programación por fechas
-                byte mqttsalenable[1]={0};        // publicar mqtt para cada señal.
-                byte disponible[3]={0,0,0};       // DISPONIBLE
+                byte mqttsalenable[4]={0};        // publicar mqtt para cada señal.
                 byte fecmes[maxPrgFec]={0,0,0,0}; // 4 bytes, mes
                 byte fecdia[maxPrgFec]={0,0,0,0}; // 4 bytes, día del mes
                 byte fechor[maxPrgFec]={0,0,0,0}; // 4 bytes, hora
@@ -90,8 +89,8 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 byte tipoi2cmbrem[maxsalrem];     // 32 bytes, tipo de sensor de cada señal remota, I2C: 1:BMP085...
                 byte iftttenable=0;               // 1 byte, ifttt desactivado
                 char iftttkey[30]="";             // 30 bytes, ifttt key
-                byte iftttpinED[maxED]={0,0};         // 2 bytes, enviar ifttt entradas digitales, byte 1 para ON, byte 2 para OFF
-                byte iftttpinSD[maxSD]={0,0};         // 2 bytes, enviar ifttt salidas digitales, byte 1 para ON, byte 2 para OFF
+                byte iftttpinED[maxED]={0,0};     // 2 bytes, enviar ifttt entradas digitales, byte 1 para ON, byte 2 para OFF
+                byte iftttpinSD[maxSD]={0,0};     // 2 bytes, enviar ifttt salidas digitales, byte 1 para ON, byte 2 para OFF
                 byte mododweet=0;                 // 1 byte, dweet.io desactivado
                 byte canalAP=3;                   // 1 byte, canal ESP en modo AP
                 byte modomyjson=0;
@@ -117,9 +116,11 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
                 char mqttpath[6][10]={"","","","","",""};             // MQTT path
                 char instname[10]="INSTAL";       // nombre de la instalación
                 unsigned int tempmqtt[22]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // período de envío mqtt para cada señal
-                                          // 8 temp, 2 anal, 4 ent. dig, 8 sal. dig. 
+                                          // 8 temp, 2 anal, 4 ent. dig, 8 sal. dig.    // NO USADO
                 byte modohp=0;  // modo bomba de calor = 1;
-                byte ngpio[22]={25,25,25,25,25,25,25,25,27,4,35,34,39,36,17,23,22,21,19,5,18,16};  // pin para cada señal 8x1-wire,2xEA,4xDI,8xDO,(4xSP(MI,MO,CLK,CS))
+                byte ngpio[30]={25,25,25,25,25,25,25,25,27,4,35,34,39,36,17,23,22,21,19,5,18,16,25,26,0,0,0,0,0,0};  // pin para cada señal 8x1-wire,2xEA,4xDI,8xDO, 2DHT, 6 libres)
+                byte tiporemote[maxdevrem]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};    // 16 bytes, tipo de cada dispositivo remoto. 0:Conuco8266, 1:conuco32
+                byte bshowbypanel[maxpaneles][7]; // 70 bytes, tabla para asignar señales a paneles
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes
@@ -136,7 +137,9 @@ typedef struct {int devori; int actualizaut; float s[3];float a1; char ua1[4]; i
     byte dhtPin[2]={DHT0,DHT1};                     // pines DHT
     byte owPin=W0;                                  // pin para DS18B20
     const byte listgpio[27]={1,2,3,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33,34,35,36,37,38,39};
-    const char idpin[25][4]={"t0","t1","t2","t3","t4","t5","t6","t7","a0","a1","e0","e1","e2","e3","s0","s1","s2","s3","s4","s5","s6","s7","id","ip","ipp"};
+    const char idpin8266[15][4]={"t0","t1","t2","a0","e0","e1","s0","s1","id","ip","ipp","c0","c1","c2","all"}; // hasta el 8 son pines.
+    const char idpin[34][4]={"t0","t1","t2","t3","t4","t5","t6","t7","a0","a1","e0","e1","e2","e3","s0","s1","s2","s3","s4","s5","s6","s7","id","ip","ipp",
+                             "c0","c1","c2","c3","c4","c5","c6","c7","all"};
         // hasta el 22 son pines
 
 //////  tratamiento de bits /////////////////////
@@ -209,7 +212,7 @@ float offsetAtemp[maxEA]={0.0,0.0}; // 1x4 offset conversión analógicas locale
 byte MbC8ant[2]={0};             // estado anterior de SD y ED: 0:SD0, 1:SD1, 2:ED0, 3:ED1
 int MbR[10];                     // 0-7 Temperaturas locales, 8-9 analógica local
 int MbRant[10];                  // 0-7 Temperaturas locales, 8-9 analógica local, valores anteriore
-byte iftttchange[1]={0};
+byte iftttchange[2]={0};         // 0-7: salidas digitales,  8-11: entradas digitales
 char idmyjsontemp[10]="";
 boolean onescenaact=false;
 byte secori=0;
@@ -217,7 +220,8 @@ int tempbt2=0;
 float latitudtemp, longitudtemp;
 char conucochar[7]="conuco";
 
-byte wifimodetemp=2;     
+int moddevicetemp=0;     
+byte wifimodetemp=2;
 byte iddevicetemp=0;     
 char aliasdevicetemp[20]="";
 char ssidSTAtemp[20]="";
@@ -238,7 +242,6 @@ byte posactsalrem=0;
 byte posacteve=0;
 byte posactfec=0;
 byte posactesc=0;
-byte modo45temp=0;
 char iottweetusertemp[10];          //IoTtweet account user ID (6 digits, included zero pre-fix)
 char iottweetkeytemp[15];           //IoTtweet account user ID (6 digits, included zero pre-fix)
 byte iottweetenabletemp=0;
@@ -251,8 +254,7 @@ int lastlen=0;
 byte paract=0;
 float dhtdata[4][2];
 byte panelact=0;
-byte prisalrem=0;
-byte priremio=0;
+//byte priremio=0;
 byte hacerresetrem=0;
 long lastReconnectAttempt=0;
 boolean pendsave = false;
@@ -273,7 +275,6 @@ char filedescesc[]="/descesc.txt";
 char filemacdevrem[]="/macdevrem.txt";
 char fileidmyjsonrem[]="/idmyjsonrem.txt";
 char fileunitsalrem[]="/unitsalrem.txt";
-char fileurl[]="/url.txt";
 char filedesclocal[]="/desclocal.txt";
 char filedesctemp[]="/desctemp.txt";
 char filei2ctypes[]="/i2ctypes.txt";
@@ -281,6 +282,7 @@ char filecommon[]="/common.txt";
 char filespanish[]="/spanish.txt";
 char fileenglish[]="/english.txt";
 char filelog[]="/log.txt";
+char filedash[]="/dash.txt";
 
 int testvalue=0;
 unsigned long tini=0;

@@ -43,8 +43,11 @@ void buildvalorC(PGM_P cad1, PGM_P cad2, PGM_P cad3, int pos, char *value, PGM_P
 
 void ICACHE_FLASH_ATTR buildJson()
 {
-  printP(llave_i,comillas,ID,comillas,dp,comillas);      for (byte i=0;i<6;i++) printP(conf.EEmac[i]);      // MAC
-  printP(comillas,coma,comillas,letraD,letraV,comillas); printPiP(dp,conf.iddevice,coma);                   // DV Device
+  printP(llave_i);
+  printP(comillas,letram,comillas,dp); printI(modelo); printP(coma);
+  printP(comillas,ID,comillas,dp,comillas);      for (byte i=0;i<6;i++) printP(conf.EEmac[i]);      // MAC
+  printP(comillas,coma);
+  printP(comillas,letraD,letraV,comillas); printPiP(dp,conf.iddevice,coma);                   // DV Device
   printP(comillas,letraM,letraJ,comillas);  printP(dp,comillas,conf.idmyjson,comillas,coma);                // MJ IdMyjson
   
   for (byte i=0; i<maxTemp; ++i) buildvalorF(letrat,vacio,vacio,i,(MbR[i]*0.01),2,vacio);  // TEMPERATURAS
@@ -88,8 +91,9 @@ void ICACHE_FLASH_ATTR buildJson()
 void ICACHE_FLASH_ATTR buildjsonext()
 {
   printremote();
-  printP(llave_i,comillas,ID,comillas,dp,comillas);
-  for (byte i=0;i<6;i++) printP(conf.EEmac[i]);
+  printP(llave_i);
+  printP(comillas,letram,comillas,dp); printI(modelo); printP(coma);
+  printP(comillas,ID,comillas,dp,comillas);      for (byte i=0;i<6;i++) printP(conf.EEmac[i]);      // MAC
   printP(comillas,coma);
 
   buildvalorI(letraD,letraV,vacio,-1,conf.iddevice,vacio);
@@ -153,6 +157,7 @@ void ICACHE_FLASH_ATTR buildjsonext()
 void ICACHE_FLASH_ATTR buildJsonConf(boolean remoto, boolean sendpass, boolean resetear)
 {
   printP(llave_i);
+  printP(comillas,letram,comillas,dp); printI(modelo); printP(coma);
   printP(comillas,letras,letras,comillas,dp,comillas); printP(sendpass?remoto?ssidSTAtemp:conf.ssidSTA:vacio,comillas,coma);  // SSID
   printP(comillas,letrap,letras,comillas,dp,comillas); printP(sendpass?remoto?passSTAtemp:conf.passSTA:vacio,comillas,coma);  // PASS
   
@@ -166,7 +171,6 @@ void ICACHE_FLASH_ATTR buildJsonConf(boolean remoto, boolean sendpass, boolean r
   buildvalorI(letrad,letraw,vacio,-1,remoto?mododweettemp:conf.mododweet,vacio);        // dw, dweet enable 
   buildvalorI(letram,letray,vacio,-1,remoto?modomyjsontemp:conf.modomyjson,vacio);      // my, myjson enable
   buildvalorC(letraM,letraJ,vacio,-1,remoto?conf.idmyjson:conf.idmyjson,vacio);         // MJ, id myjson
-  buildvalorI(letram,cuatro,cinco,-1,remoto?modo45temp:conf.modo45,vacio);              // m45, modo entradas 4,5
   buildvalorL(letrap,letraa,letrap,-1,remoto?peractpantemp:conf.peractpan,vacio);       // pap, período refresco panel
   buildvalorL(letrap,letraa,letrar,-1,remoto?peractremtemp:conf.peractrem,vacio);       // par, período actualización remotos
   buildvalorL(letrat,letrad,letrap,-1,remoto?TempDesactPrgtemp:conf.TempDesactPrg,vacio);   // tdp, tiempo desactivación programas
@@ -296,44 +300,48 @@ void ICACHE_FLASH_ATTR parseJsonremoto()
   ///// parte 1, extracción de valores
   extrae(true,msg, PSTR("ID")).toCharArray(datosremoto.mac,13);
   datosremoto.devori=extrae(false,msg,DV).toInt();
+  int tiporemote=extrae(false,msg,letram).toInt();
   extrae(true,msg,MJ).toCharArray(datosremoto.idmyj,10);
 
-  for (byte i=0;i<3;i++) datosremoto.s[i]=extrae(false,msg,idpin[i]).toFloat();   // temperaturas
-  datosremoto.a1=extrae(false,msg,idpin[3]).toFloat();                            // analógica
-  extrae(true,msg,ua0).toCharArray(datosremoto.ua1,4);                            // unidades señal analógica
-  for (byte i=0;i<2;i++) datosremoto.di[i]=extrae(false,msg,idpin[i+4]).toInt();  // entradas digitales
-  if (datosremoto.di[0]==2)
+  if (tiporemote==8266)
     {
-    datosremoto.dhtdata[0][0]=extrae(false,msg,PSTR("dht0")).toFloat();
-    datosremoto.dhtdata[0][1]=extrae(false,msg,PSTR("dhh0")).toFloat();
+    for (byte i=0;i<3;i++) datosremoto.s[i]=extrae(false,msg,idpin[i]).toFloat();   // temperaturas
+    datosremoto.a1=extrae(false,msg,idpin[3]).toFloat();                            // analógica
+    extrae(true,msg,ua0).toCharArray(datosremoto.ua1,4);                            // unidades señal analógica
+    for (byte i=0;i<2;i++) datosremoto.di[i]=extrae(false,msg,idpin[i+4]).toInt();  // entradas digitales
+    if (datosremoto.di[0]==2)
+      {
+      datosremoto.dhtdata[0][0]=extrae(false,msg,PSTR("dht0")).toFloat();
+      datosremoto.dhtdata[0][1]=extrae(false,msg,PSTR("dhh0")).toFloat();
+      }
+    if (datosremoto.di[1]==2)
+      {
+      datosremoto.dhtdata[1][0]=extrae(false,msg,PSTR("dht1")).toFloat();
+      datosremoto.dhtdata[1][1]=extrae(false,msg,PSTR("dhh1")).toFloat();
+      }
+    for (byte i=0;i<2;i++) datosremoto.ds[i]=extrae(false,msg,idpin8266[i+6]).toInt();  // salidas digitales
+    datosremoto.tdi[0]=extrae(false,msg,tel0).toInt();        // número veces entradas digitales
+    datosremoto.tdi[1]=extrae(false,msg,tel1).toInt();
+    datosremoto.tdo[0]=extrae(false,msg,tsl0).toInt();        // tiempo salidas digitales
+    datosremoto.tdo[1]=extrae(false,msg,tsl1).toInt();
+    ///// parte 2, asignación de valores
+    for (int j=0;j<maxsalrem;j++)
+      {
+      if (conf.idsalremote[j]>0)
+        if (conf.idsalremote[j]==datosremoto.devori)
+          {
+          if (conf.senalrem[j]<=2) { sondaremote[j]=datosremoto.s[conf.senalrem[j]]; }// sondas remotas 1,2 y 3
+          else if (conf.senalrem[j]==3) {sondaremote[j]=datosremoto.a1; strcpy(auxdesc,datosremoto.ua1); savedescr(fileunitsalrem,auxdesc, j,4); } // analógica
+          else if (conf.senalrem[j]<=5) {setbit8(bstatremote, j, datosremoto.di[conf.senalrem[j]-4]); contaremote[j]=datosremoto.tdi[conf.senalrem[j]-4];
+                                         tipoedremote[j]=datosremoto.di[conf.senalrem[j]-4];}
+          else if (conf.senalrem[j]<=7) {setbit8(bstatremote, j, datosremoto.ds[conf.senalrem[j]-6]); contaremote[j]=datosremoto.tdo[conf.senalrem[j]-6];   }
+          }
+      if (conf.idremote[j]==datosremoto.devori) { 
+        strcpy(auxdesc,datosremoto.mac); savedescr(filemacdevrem,auxdesc, j,13); 
+        strcpy(auxdesc,datosremoto.idmyj); savedescr(fileidmyjsonrem,auxdesc, j,10); }
+      }
     }
-  if (datosremoto.di[1]==2)
-    {
-    datosremoto.dhtdata[1][0]=extrae(false,msg,PSTR("dht1")).toFloat();
-    datosremoto.dhtdata[1][1]=extrae(false,msg,PSTR("dhh1")).toFloat();
-    }
-  for (byte i=0;i<2;i++) datosremoto.ds[i]=extrae(false,msg,idpin[i+6]).toInt();  // salidas digitales
-  datosremoto.tdi[0]=extrae(false,msg,tel0).toInt();        // número veces entradas digitales
-  datosremoto.tdi[1]=extrae(false,msg,tel1).toInt();
-  datosremoto.tdo[0]=extrae(false,msg,tsl0).toInt();        // tiempo salidas digitales
-  datosremoto.tdo[1]=extrae(false,msg,tsl1).toInt();
   
-  ///// parte 2, asignación de valores
-  for (int j=0;j<maxsalrem;j++)
-    {
-    if (conf.idsalremote[j]>0)
-      if (conf.idsalremote[j]==datosremoto.devori)
-        {
-        if (conf.senalrem[j]<=2) { sondaremote[j]=datosremoto.s[conf.senalrem[j]]; }// sondas remotas 1,2 y 3
-        else if (conf.senalrem[j]==3) {sondaremote[j]=datosremoto.a1; strcpy(auxdesc,datosremoto.ua1); savedescr(fileunitsalrem,auxdesc, j,13); } // analógica
-        else if (conf.senalrem[j]<=5) {setbit8(bstatremote, j, datosremoto.di[conf.senalrem[j]-4]); contaremote[j]=datosremoto.tdi[conf.senalrem[j]-4];
-                                       tipoedremote[j]=datosremoto.di[conf.senalrem[j]-4];}
-        else if (conf.senalrem[j]<=7) {setbit8(bstatremote, j, datosremoto.ds[conf.senalrem[j]-6]); contaremote[j]=datosremoto.tdo[conf.senalrem[j]-6];   }
-        }
-    if (conf.idremote[j]==datosremoto.devori) { 
-      strcpy(auxdesc,datosremoto.mac); savedescr(filemacdevrem,auxdesc, j,13); 
-      strcpy(auxdesc,datosremoto.idmyj); savedescr(fileidmyjsonrem,auxdesc, j,10); }
-    }
 }
 
 void ICACHE_FLASH_ATTR parseJsonConf()
@@ -353,7 +361,6 @@ void ICACHE_FLASH_ATTR parseJsonConf()
   conf.mododweet=extrae(false,msg,PSTR("dw")).toInt();
   conf.modomyjson=extrae(false,msg,PSTR("my")).toInt();
   extrae(true,msg,MJ).toCharArray(conf.idmyjson,20);
-  conf.modo45=extrae(false,msg,PSTR("m45")).toInt();
   conf.peractpan=extrae(false,msg,PSTR("pap")).toInt();
   conf.peractrem=extrae(false,msg,PSTR("par")).toInt();
   conf.TempDesactPrg=extrae(false,msg,PSTR("tdp")).toInt();

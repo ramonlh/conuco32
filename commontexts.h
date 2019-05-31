@@ -152,6 +152,8 @@ PGM_P(paren_i)="(";
 PGM_P(paren_f)=")";
 PGM_P(llave_i)="{";
 PGM_P(llave_f)="}";
+PGM_P(corchete_i)="[";
+PGM_P(corchete_f)="]";
 PGM_P(punto)=".";
 PGM_P(puntoycoma)=";";
 PGM_P(guion)="-";
@@ -165,11 +167,14 @@ PGM_P(vacio)="";
 PGM_P(amas)="a+";
 PGM_P(rmas)="r+";
 PGM_P(wmas)="w+";
+PGM_P(grados)="ºC";
 PGM_P(celsius)="&#8451;";
 PGM_P(symsum)="&#8721;";
 PGM_P(symhoz)="&#9773;";
 PGM_P(symyes)="&#10004;";
 PGM_P(symnot)="&#10006;";
+PGM_P(tset)="/set";
+PGM_P(tstate)="/state";
 
 //////  No convertibles
 PGM_P(applicationjson)="application/json; charset=utf-8";
@@ -216,6 +221,8 @@ PGM_P(ups)="PgUp";
 PGM_P(downs)="PgDn";
 PGM_P(lefts)="LF";
 PGM_P(rigths)="RT";
+PGM_P(tconuco)="conuco 8266";
+PGM_P(tconuco32)="conuco 32";
 
 ///////////////////////////////
 

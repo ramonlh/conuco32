@@ -78,7 +78,8 @@ void ICACHE_FLASH_ATTR savedescr(char* namefile, char* descr, byte ind, byte len
     {
     for (byte i=strlen(descr);i<len-1;i++) descr[i]=' ';  
     descr[len-1]='\0';
-    auxfile.print(descr);
+    auxfile.print(descr);auxfile.print('\0');
+    auxfile.print(crlf);
     }
   auxfile.close();   
 }
@@ -137,15 +138,27 @@ String ICACHE_FLASH_ATTR extrae(boolean eschar, String cad, String subcad)
   { subcad.concat("\"");
     return cad.substring(cad.indexOf(subcad)+subcad.length()+(eschar?2:1), cad.indexOf(",",cad.indexOf(subcad))-(eschar?1:0));      }
 
-char* ICACHE_FLASH_ATTR ftoa(int valor)
-{  
-  char buff1[10],buff2[10];
-  itoa(valor/100,buff1,10);
-  itoa(valor%100,buff2,10);
-  strcat(buff1,".");
-  strcat(buff1,buff2);
-  return buff1;
-}  
+//char* ICACHE_FLASH_ATTR ftoa(int valor)
+//{  
+//  char buff1[10],buff2[10];
+//  itoa(valor/100,buff1,10);
+//  itoa(valor%100,buff2,10);
+//  strcat(buff1,".");
+//  strcat(buff1,buff2);
+//  return buff1;
+//}  
+
+//char* ICACHE_FLASH_ATTR ftoa(float valor, int dec)
+//{  
+//  char buff1[10], buff2[10];
+//  itoa(valor/10,buff1,10);
+//  itoa(valor%10,buff2,10);
+//  Serial.print("buff1:"); Serial.print(buff1);
+//  Serial.print(" buff2:"); Serial.println(buff2);
+//  strcat(buff1,".");
+//  strcat(buff1,buff2);
+//  return buff2;
+//}  
 
 void ICACHE_FLASH_ATTR tictac(int pin, int n, int delayed)
   { for (int i=0;i<n;i++) 
@@ -230,7 +243,6 @@ boolean checkfiles()
   auxB=auxB && checkfile(filemacdevrem); 
   auxB=auxB && checkfile(fileidmyjsonrem); 
   auxB=auxB && checkfile(fileunitsalrem); 
-  auxB=auxB && checkfile(fileurl); 
   auxB=auxB && checkfile(filedesclocal); 
   auxB=auxB && checkfile(filedesctemp); 
   auxB=auxB && checkfile(filei2ctypes); 

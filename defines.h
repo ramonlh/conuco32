@@ -1,5 +1,6 @@
 
 
+  #define modelo 32
   #define portdefault 88
   #define ROMsize 4096
   #define maxerrorrem 5
@@ -23,50 +24,6 @@
   #define maxparam 14     // número máximo parámetros LCD
   #define maxpaneles 10   // número máximo de paneles
   
-//  #define I0 36           // Inputs
-//  #define I1 39
-//  #define I2 35
-//  #define I3 34
-//  
-//  #define TX0 1           // Serial port 0
-//  #define RX0 3
-//
-//  #define SPIMISO 12      // SPI
-//  #define SPIMOSI 13
-//  #define SPICLK 14
-//  #define SPICS 15
-//
-//  #define SDA 21          // I2C-SDA / O6
-//  #define SCL 22          // I2C-SCL / O7
-//
-//  #define ADC0 27         // ADC0 / T3
-//  #define ADC1 4          // ADC1 / T4
-//  
-//  #define DAC0 26         // DAC1 / W0
-//  #define DAC1 25         // DAC1 
-//
-//  #define W0 26          // 1 wire port / DAC0
-//  #define W1 25          // 1 wire port / DAC0
-//
-//  #define O0 5           // Ouputs
-//  #define O1 23            
-//  #define O2 19            
-//  #define O3 18
-//  #define O4 17
-//  #define O5 16        
-//  #define O6 21          // O6 / I2C-SDA
-//  #define O7 22          // O7 / I2C-SCL 
-//  #define RESERVED 29
-//  
-//  #define T0 2           // TX433
-//  #define T1 4
-//  #define T2 32
-//  #define T3 27
-//  #define T4 33
-//
-//  #define RX433 32
-//  #define TX433 2         // T0
-
   // placa grande. 80x75
   #define I0 35    // OK    // Inputs
   #define I1 34    // OK  
@@ -117,7 +74,8 @@
 //  #define RTC_GPIO10 4
   #define baseAna 8
 
-  
+//// BOMBA DE CALOR AGUA-AGUA
+
 ////////////////////////////////
 #define nEVE 8          // número de eventos
 #define despIFTTT 252   // valor para disparar IFTTT, 252
@@ -156,7 +114,7 @@
 #define DIRIP 26
 #define disp 27
 #define dispositivo 28
-//#define ejecutar 29
+#define ejecutar 29
 #define ent 30
 #define entanalog 31
 #define entradasdig 32
@@ -168,7 +126,7 @@
 #define fabrica 38
 #define fecha 39
 #define files 40
-//#define guardar 41
+#define guardar 41
 #define hora 42
 #define inicial 43
 #define staticip 44
@@ -238,9 +196,11 @@
 //#define nohacernada 108
 #define faltafichero 109
 #define useftp 110
+#define guardarexportar 111  
+#define idioma 112                                  
 
 //////////////////////////////////////////////////////////////////////
-////// textos, deben coincidir con los textos del fichero common.txtst
+////// textos, deben coincidir con los textos del fichero common.txt
 #define dbm 2
 #define Time 3
 #define Chipid 4
@@ -462,7 +422,7 @@
 //#define attachfilename 217
 #define head_f 218
 #define form_action 219
-//#define espere 220
+#define SMALL 220
 #define htmlRefresh_i 221
 #define fontsize_i 222
 #define font_f 223
@@ -545,4 +505,10 @@
 #define dashiconoff 300
 #define dashiconon 301
 #define gpio 302
+//#define small 303
+#define localip 304
+#define publicip 305
+#define maindevice 306
+#define mqttdashtopic 307
+#define tlink 308
 
