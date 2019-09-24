@@ -166,6 +166,7 @@ int peractpantemp=10;           // 2 período de actualización automática pág
 int peractremtemp=10;           // 2 período de actualización automática a nodo raíz
 byte bsumatAtemp[maxEA]={0};   // 1 byte,  mostrar sumaA temp
 int valoresTemp[maxTemp]={0,0,0,0,0,0,0,0}; // 8x2, 16 bytes guarda los valores de las sondas dividido por 100
+int tiporemotetemp=8266;
 byte nTemp=0;                  // número sondas detectadas en cada puerto 1-wire
 uint8_t addr1Wire[maxTemp][8];
 unsigned long mact1,mact2,mact10,mact60,mact3600,mact86400; 
@@ -286,5 +287,6 @@ char filedash[]="/dash.txt";
 
 int testvalue=0;
 unsigned long tini=0;
+String sinput="";
 
 ////////////////////////////////////////

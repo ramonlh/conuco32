@@ -470,7 +470,7 @@ int ICACHE_FLASH_ATTR postdweet(char* key)
   http.addHeader(type, tPOST);
   http.addHeader(contenttype, applicationjson);
   http.addHeader(dataType, json);
-  http.setTimeout(conf.timeoutNTP);
+  http.setConnectTimeout(conf.timeoutNTP);
   int httpCode = http.POST(msg);
   http.end();
   msg=vacio;
@@ -490,9 +490,11 @@ int ICACHE_FLASH_ATTR ifttttrigger(char *evento, char* key, char* value1, char* 
   while (auxchar[i]!='\0') { if (auxchar[i]==' ') auxchar[i]='_';  i++; }
   HTTPClient http;
   http.begin(c(makeriftttcom), 80, auxchar);
-  http.setTimeout(conf.timeoutNTP);
+  http.setConnectTimeout(conf.timeoutNTP);
+  Serial.print("ifttttrigger: ");Serial.print(c(makeriftttcom));Serial.print(auxchar);
   int httpCode=http.GET();
-  if (httpCode < 0) addlog(2, httpCode, c(ifttt));
+  Serial.print(" ");Serial.println(httpCode);
+  if (httpCode<0) addlog(2, httpCode, c(ifttt));
   http.end();
   return httpCode;
 }
@@ -529,8 +531,10 @@ int ICACHE_FLASH_ATTR getMyIP()
   HTTPClient http;
   Serial.print("hostmyip:"); Serial.println(conf.hostmyip);
   http.begin(conf.hostmyip, 80, msg);
-  http.setTimeout(conf.timeoutNTP);
-  int httpCode = http.GET();
+  http.setConnectTimeout(conf.timeoutNTP);
+  Serial.print("getMyIP:");Serial.print("host:");Serial.print(conf.hostmyip);Serial.print(80);Serial.print(":");Serial.print(msg);
+  int httpCode=http.GET();
+  Serial.print(" ");Serial.println(httpCode);
   if (httpCode > 0) {
     if (httpCode == HTTP_CODE_OK) { msg=http.getString(); msg.toCharArray(conf.myippub, msg.length());  } }
   http.end();
@@ -646,38 +650,43 @@ void procesaeventos()
   for (byte i=0; i<nEVE; i++) // número de condición, de 0 a 7
     {
     if (((conf.actPrg[0]) && (getbit8(conf.bPRGeve[i], 0))) ||
-        ((conf.actPrg[1]) && (getbit8(conf.bPRGeve[i], 1)))) // si algún programa activo en la condición
+        ((conf.actPrg[1]) && (getbit8(conf.bPRGeve[i], 1))) ||
+        ((conf.actPrg[2]) && (getbit8(conf.bPRGeve[i], 2))) ||
+        ((conf.actPrg[3]) && (getbit8(conf.bPRGeve[i], 3))) ||
+        ((conf.actPrg[4]) && (getbit8(conf.bPRGeve[i], 4))) ||
+        ((conf.actPrg[5]) && (getbit8(conf.bPRGeve[i], 5))) ||
+        ((conf.actPrg[6]) && (getbit8(conf.bPRGeve[i], 6))) ||
+        ((conf.actPrg[7]) && (getbit8(conf.bPRGeve[i], 7))) ) // si algún programa activo en la condición
       {
-      if (conf.condact[i] < 150)  // activadora entrada o salida digital (0-1)
+      if ((conf.condact[i]>=10) && (conf.condact[i]<=21))  // activadora entrada o salida digital (10-21)
         {
         boolean cumple=false;
-        if (conf.condact[i]<=1) cumple=(getbit8(conf.MbC8, conf.condact[i]+2)==conf.condvalD[i]);
-        //          if ((!modo45) && (conf.condact[i]<=1)) cumple=(getbit8(conf.MbC8,conf.condact[i]+2) == condvalD[i]);
-        if ((conf.condact[i] >= 2) && (conf.condact[i] <= 3)) cumple = (valorpin[getbit8(conf.MbC8, conf.condact[i] - 2)] == conf.condvalD[i]);
-        if (conf.condact[i] >= 100) cumple=getbit8(bstatremote, conf.condact[i] - 100);
+        if (conf.condact[i]<=13) cumple=(getbit8(conf.MbC8, conf.condact[i]+10)==conf.condvalD[i]);
+        if ((conf.condact[i]>=14) && (conf.condact[i]<=21)) cumple=(valorpin[getbit8(conf.MbC8, conf.condact[i]-10)] == conf.condvalD[i]);
+//        if (conf.condact[i] >= 100) cumple=getbit8(bstatremote, conf.condact[i] - 100);
         if (cumple)                   // si valor pin = valor en condición // CUMPLE
           {
-          if (conf.evensal[i] <= 3)         // señal local o escena
+          if (conf.evensal[i]<=15)         // señal local o escena
             {
-            pinVAL(sdPin[conf.evensal[i]], getbit8(conf.bevenniv, i), conf.iddevice);  // señal local
+//            pinVAL(sdPin[conf.evensal[i]], getbit8(conf.bevenniv, i), conf.iddevice);  // señal local
             }
           else if (conf.evensal[i] <= 200)  // señal remota
             {
             if (getbit8(conf.bconactmode, i) == 0) // modo ESTADO
               {
-              int auxerr = pinvalR(conf.idsalremote[conf.evensal[i] - 4], conf.webPort, conf.pinremote[conf.evensal[i] - 4], getbit8(conf.bevenniv, i));
-              if ((auxerr == 200) || (auxerr == 303) || (auxerr == (-11)))
-                {
-                setbit8(bstatremote, conf.evensal[i] - 4, getbit8(conf.bevenniv, i));
-                contaremote[conf.evensal[i] - 4] = 0;
-                }
-              else
-                { Serial.print(c(tpinvalr)); Serial.println(auxerr);   }
+//              int auxerr = pinvalR(conf.idsalremote[conf.evensal[i] - 4], conf.webPort, conf.pinremote[conf.evensal[i] - 4], getbit8(conf.bevenniv, i));
+//              if ((auxerr == 200) || (auxerr == 303) || (auxerr == (-11)))
+//                {
+//                setbit8(bstatremote, conf.evensal[i] - 4, getbit8(conf.bevenniv, i));
+//                contaremote[conf.evensal[i] - 4] = 0;
+//                }
+//              else
+//                { Serial.print(c(tpinvalr)); Serial.println(auxerr);   }
               }
             else                             // modo CAMBIO
               {
-              if (getbit8(bconactcumple, i) == 0) // antes no cumplía
-                pinVAL(sdPin[conf.evensal[i]], getbit8(conf.bevenniv, i), conf.iddevice); // señal local
+//              if (getbit8(bconactcumple, i) == 0) // antes no cumplía
+//                pinVAL(sdPin[conf.evensal[i]], getbit8(conf.bevenniv, i), conf.iddevice); // señal local
               }
             }
           else if (conf.evensal[i]==despIFTTT) // mandar notificación
@@ -686,8 +695,8 @@ void procesaeventos()
               if (getbit8(bevenENABLE[0],i)==1)
                 {
                 Serial.println("IFTTT dig sent");
-                if (ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, itoa(conf.condact[i],buff,10), "testdig")==200)
-                  { setbit8(bevenENABLE[0],i,0);  }
+//                if (ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, itoa(conf.condact[i],buff,10), "testdig")==200)
+//                  { setbit8(bevenENABLE[0],i,0);  }
                 }
             }
           setbit8(bconactcumple, i, 1);
@@ -697,34 +706,32 @@ void procesaeventos()
           setbit8(bconactcumple, i, 0);
           }     // fin no CUMPLE
         }   // fin activadora digital Local
-      else     // activadora analógica o sonda (>=150)
+////////************************************************************///////////        
+      else     // activadora sonda o analógica (0..9)
         {
         float vact;
-        if (conf.condact[i] == 150) vact = float(MbR[3]); // entradas analógicas locales
-        else if (conf.condact[i] < 180) vact = float(sondaremote[conf.condact[i] - 160]); // entradas analógicas remotas
-        else if (conf.condact[i] < 200) vact = float(MbR[conf.condact[i] - 180] / 100);  // temperaturas locales
-        else if (conf.condact[i] < 220) vact = float(sondaremote[conf.condact[i] - 200] / 100); // temperaturas remotas
-        else if (conf.condact[i] < 250) vact = float(mbtemp[conf.condact[i] - 220] / 100); // temperaturas modbus
+        if (conf.condact[i]<=7) vact = float(MbR[conf.condact[i]]/100);  // temperaturas locales
+        else if (conf.condact[i]<=9) vact = float(MbR[conf.condact[i]]); // entradas analógicas locales 
         //          else if (condact[i]==254)
         float tcomp = float(conf.evenvalA[i]);
-        if (((conf.evencomp[i] == 0) && (vact >= tcomp)) || ((conf.evencomp[i] != 0) && (vact <= tcomp)))
+        if (((conf.evencomp[i]==0) && (vact>=tcomp)) || ((conf.evencomp[i] != 0) && (vact <= tcomp)))
           { // CUMPLE
-          if (getbit8(conf.bconsaltipo, i) == 0) // señal de salida local
+          if (getbit8(conf.bconsaltipo, i)==0) // señal de salida local
             {
-            if (conf.evensal[i] <= 3)
+            if (conf.evensal[i] <= 7)
               {
-              pinVAL(sdPin[conf.evensal[i]], getbit8(conf.bevenniv, i), conf.iddevice);  // señal local
+              pinVAL(conf.evensal[i], getbit8(conf.bevenniv, i), conf.iddevice);  // señal local
               }
             else if (conf.evensal[i] <= 200)
               {
-              int auxerr = pinvalR(conf.idsalremote[conf.evensal[i] - 4], conf.webPort, conf.pinremote[conf.evensal[i] - 4], getbit8(conf.bevenniv, i));
-              if ((auxerr == 200) || (auxerr == 303) || (auxerr == (-11)))
-                {
-                setbit8(bstatremote, conf.evensal[i] - 4, getbit8(conf.bevenniv, i));
-                contaremote[conf.evensal[i] - 4] = 0;
-                }
-              else
-                { Serial.print(c(tpinvalr)); Serial.println(auxerr); }
+//              int auxerr = pinvalR(conf.idsalremote[conf.evensal[i] - 4], conf.webPort, conf.pinremote[conf.evensal[i] - 4], getbit8(conf.bevenniv, i));
+//              if ((auxerr == 200) || (auxerr == 303) || (auxerr == (-11)))
+//                {
+//                setbit8(bstatremote, conf.evensal[i] - 4, getbit8(conf.bevenniv, i));
+//                contaremote[conf.evensal[i] - 4] = 0;
+//                }
+//              else
+//                { Serial.print(c(tpinvalr)); Serial.println(auxerr); }
               }
             else if (conf.evensal[i]==despIFTTT)
               {
@@ -732,8 +739,8 @@ void procesaeventos()
                 if (getbit8(bevenENABLE[1],i)==1)
                   {
                   Serial.println("IFTTT ana sent");
-                  if(ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, itoa(conf.condact[i],buff,10), "testana")==200)
-                    { setbit8(bevenENABLE[1],i,0); }
+//                  if(ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, itoa(conf.condact[i],buff,10), "testana")==200)
+//                    { setbit8(bevenENABLE[1],i,0); }
                   }
              }
             }
@@ -1290,6 +1297,121 @@ void ICACHE_FLASH_ATTR seleccionatipoi2cmb(byte i)
   pc(select_f);
 }
 
+void ICACHE_FLASH_ATTR extraevaloresTempConf(boolean withpass)
+{                       // extrae datos de json.conf
+  if (withpass)
+    {
+    extrae(true, msg, PSTR("ss")).toCharArray(ssidSTAtemp, 20);
+    extrae(true, msg, PSTR("ps")).toCharArray(passSTAtemp, 20);
+    }
+  moddevicetemp = extrae(false, msg, PSTR("m")).toInt();
+  iddevicetemp = extrae(false, msg, PSTR("DV")).toInt();
+  versinsttemp = extrae(false, msg, PSTR("v")).toInt();
+  actualizauttemp = extrae(false, msg, PSTR("aa")).toInt();
+  extrae(true, msg, PSTR("al")).toCharArray(aliasdevicetemp, 20);
+  iftttenabletemp = extrae(false, msg, PSTR("if")).toInt();
+  extrae(true, msg, PSTR("k")).toCharArray(iftttkeytemp, 30);
+  mododweettemp = extrae(false, msg, PSTR("dw")).toInt();
+  modomyjsontemp = extrae(false, msg, PSTR("my")).toInt();
+  extrae(true, msg, PSTR("MJ")).toCharArray(idmyjsontemp, 10);
+  peractpantemp = extrae(false, msg, PSTR( "pap")).toInt();
+  peractremtemp = extrae(false, msg, PSTR( "par")).toInt();
+  TempDesactPrgtemp = extrae(false, msg, PSTR("tdp")).toInt();
+  iottweetenabletemp = extrae(false, msg, PSTR("iot")).toInt();
+  extrae(true, msg, PSTR("iotu")).toCharArray(iottweetusertemp, 10);
+  extrae(true, msg, PSTR("iotk")).toCharArray(iottweetkeytemp, 15);
+  latitudtemp = extrae(true, msg, PSTR("lat")).toFloat();
+  longitudtemp = extrae(true, msg, PSTR("lon")).toFloat();
+
+  byte auxmax=moddevicetemp==8266?3:maxTemp;
+  for (byte i=0;i<auxmax;i++) 
+    { extrae(true,msg,idpin[i]).toCharArray(auxdesc,20); 
+      savedescr(filedesctemp,auxdesc,i,20); 
+    }
+  
+  auxmax=moddevicetemp==8266?1:maxEA;
+  for (byte i=0;i<auxmax;i++) 
+    {
+    extrae(true, msg, idpin[i+8]).toCharArray(auxdesc, 20); 
+    savedescr(filedesctemp, auxdesc, i+8, 20);
+    extrae(true, msg, PSTR("au0")).toCharArray(unitpinAtemp, 4);
+    }
+    
+  auxmax=moddevicetemp==8266?2:maxED;
+  for (byte i=0;i<auxmax;i++) 
+    { extrae(true,msg,idpin[i+10]).toCharArray(auxdesc,20); 
+    savedescr(filedesctemp,auxdesc,i+10,20); }
+    
+  auxmax=moddevicetemp==8266?2:maxSD;
+  for (byte i=0;i<auxmax;i++) 
+  { extrae(true,msg,idpin[i+14]).toCharArray(auxdesc,20); 
+    savedescr(filedesctemp,auxdesc,i+14,20); }
+  
+  factorAtemp[0] = extrae(true, msg, PSTR("af0")).toFloat();
+  offsetAtemp[0] = extrae(true, msg, PSTR("ao0")).toFloat();
+  bsumatAtemp[0] = extrae(true, msg, PSTR("asu0")).toInt();
+  tipoEDtemp[0] = extrae(true, msg, PSTR("et0")).toInt();
+  tipoEDtemp[1] = extrae(true, msg, PSTR("et1")).toInt();
+  valinictemp[0] = extrae(false, msg, PSTR( "vi0")).toInt();
+  valinictemp[1] = extrae(false, msg, PSTR("vi1")).toInt();
+  tempdefacttemp[0] = extrae(false, msg, PSTR("on0")).toInt();
+  tempdefacttemp[1] = extrae(false, msg, PSTR("on1")).toInt();
+  tempdefdestemp[0] = extrae(false, msg, PSTR("off0")).toInt();
+  tempdefdestemp[1] = extrae(false, msg, PSTR("off1")).toInt();
+  iftttpinEDtemp[0] = extrae(false, msg, PSTR("ife0")).toInt();
+  iftttpinEDtemp[1] = extrae(false, msg, PSTR("ife1")).toInt();
+  iftttpinSDtemp[0] = extrae(false, msg, PSTR("ifs0")).toInt();
+  iftttpinSDtemp[1] = extrae(false, msg, PSTR("ifs1")).toInt();
+  extrae(true, msg, PSTR("fsv")).toCharArray(fwUrlBasetemp, 80);
+  msg=vacio;
+}
+
+void addsignal(byte n)    // n de 0 a 7, es la señal del remoto que hay que añadir a ñas señales remotas del master
+{
+  byte i=0;
+  boolean hayhueco=false;
+  boolean existe=false;
+  while ((i<maxsalrem) and (!hayhueco) && (!existe))
+    {
+    hayhueco=(conf.idsalremote[i]==0);  
+    existe=((conf.idsalremote[i]==iddevicetemp) && (conf.senalrem[i]==n));
+    if (!hayhueco) i++;
+    }
+  if (hayhueco)
+    {
+    conf.idsalremote[i]=iddevicetemp;  conf.senalrem[i]=n;
+    readdescr(filedesctemp,n,20);  savedescr(filesalrem,auxdesc,i,20);
+    }
+}
+
+void scanremotes()
+{
+  byte k=0;   // señales remotas añadidas
+  for (byte i=150;i<166;i++)    // busca dispositivos
+    {
+    if (i!=conf.iddevice)
+      {
+      boolean encontrado=false;
+      int auxerr=ReqJsonConf(i, 88);
+      if (auxerr==HTTP_CODE_OK) 
+        {
+        extraevaloresTempConf(true);
+        if (tiporemotetemp==8266)
+          {
+          byte j=0;
+          while ((j<maxdevrem) && (conf.idremote[j]>0) && (!encontrado))
+            {
+            encontrado=(conf.idremote[j]==i);
+            if (!encontrado) j++;
+            }
+          if (j<16) {if (!encontrado) { conf.idremote[j]=i; } savedescr(filedevrem, aliasdevicetemp, j, 20);  }
+          }
+        }
+      msg=vacio;
+      }
+    }
+}
+
 void ICACHE_FLASH_ATTR setupremHTML()
 {
   printremote();
@@ -1316,6 +1438,7 @@ void ICACHE_FLASH_ATTR setupremHTML()
     }
   // headers
   if (server.args()>0) { posactrem = constrain(server.arg(0).toInt(), 0, 15); }
+  if (server.args()>1) { if (server.arg(1).toInt()==1) { scanremotes();  }  }
   writeHeader(false,false);
   writeMenu(3, 10);
   writeForm(slkhtm);
@@ -1414,8 +1537,10 @@ void ICACHE_FLASH_ATTR setupremHTML()
     printP(tr_f);
     }
   printP(tr);
-  printColspan(4);
-  printP(t(pietiporem), td_f, tr_f);
+  printColspan(5);
+  printP(t(pietiporem));
+  printP(href_i,"\"sr?p=0&m=1\"> Scan",href_f);
+  printP(td_f,tr_f);
   writeFooter(guardar, false);
   serversend200();
 }
@@ -2460,75 +2585,6 @@ void ICACHE_FLASH_ATTR downloadHTML() {
   }
 }
 
-void ICACHE_FLASH_ATTR extraevaloresTempConf(boolean withpass)
-{                       // extrae datos de json.conf
-  if (withpass)
-    {
-    extrae(true, msg, PSTR("ss")).toCharArray(ssidSTAtemp, 20);
-    extrae(true, msg, PSTR("ps")).toCharArray(passSTAtemp, 20);
-    }
-  moddevicetemp = extrae(false, msg, PSTR("m")).toInt();
-  iddevicetemp = extrae(false, msg, PSTR("DV")).toInt();
-  versinsttemp = extrae(false, msg, PSTR("v")).toInt();
-  actualizauttemp = extrae(false, msg, PSTR("aa")).toInt();
-  extrae(true, msg, PSTR("al")).toCharArray(aliasdevicetemp, 20);
-  iftttenabletemp = extrae(false, msg, PSTR("if")).toInt();
-  extrae(true, msg, PSTR("k")).toCharArray(iftttkeytemp, 30);
-  mododweettemp = extrae(false, msg, PSTR("dw")).toInt();
-  modomyjsontemp = extrae(false, msg, PSTR("my")).toInt();
-  extrae(true, msg, PSTR("MJ")).toCharArray(idmyjsontemp, 10);
-  peractpantemp = extrae(false, msg, PSTR( "pap")).toInt();
-  peractremtemp = extrae(false, msg, PSTR( "par")).toInt();
-  TempDesactPrgtemp = extrae(false, msg, PSTR("tdp")).toInt();
-  iottweetenabletemp = extrae(false, msg, PSTR("iot")).toInt();
-  extrae(true, msg, PSTR("iotu")).toCharArray(iottweetusertemp, 10);
-  extrae(true, msg, PSTR("iotk")).toCharArray(iottweetkeytemp, 15);
-  latitudtemp = extrae(true, msg, PSTR("lat")).toFloat();
-  longitudtemp = extrae(true, msg, PSTR("lon")).toFloat();
-
-  byte auxmax=moddevicetemp==8266?3:maxTemp;
-  for (byte i=0;i<auxmax;i++) 
-    { extrae(true,msg,idpin[i]).toCharArray(auxdesc,20); 
-      savedescr(filedesctemp,auxdesc,i,20); 
-    }
-  
-  auxmax=moddevicetemp==8266?1:maxEA;
-  for (byte i=0;i<auxmax;i++) 
-    {
-    extrae(true, msg, idpin[i+8]).toCharArray(auxdesc, 20); 
-    savedescr(filedesctemp, auxdesc, i+8, 20);
-    extrae(true, msg, PSTR("au0")).toCharArray(unitpinAtemp, 4);
-    }
-    
-  auxmax=moddevicetemp==8266?2:maxED;
-  for (byte i=0;i<auxmax;i++) 
-    { extrae(true,msg,idpin[i+10]).toCharArray(auxdesc,20); 
-    savedescr(filedesctemp,auxdesc,i+10,20); }
-    
-  auxmax=moddevicetemp==8266?2:maxSD;
-  for (byte i=0;i<auxmax;i++) 
-  { extrae(true,msg,idpin[i+14]).toCharArray(auxdesc,20); 
-    savedescr(filedesctemp,auxdesc,i+14,20); }
-  
-  factorAtemp[0] = extrae(true, msg, PSTR("af0")).toFloat();
-  offsetAtemp[0] = extrae(true, msg, PSTR("ao0")).toFloat();
-  bsumatAtemp[0] = extrae(true, msg, PSTR("asu0")).toInt();
-  tipoEDtemp[0] = extrae(true, msg, PSTR("et0")).toInt();
-  tipoEDtemp[1] = extrae(true, msg, PSTR("et1")).toInt();
-  valinictemp[0] = extrae(false, msg, PSTR( "vi0")).toInt();
-  valinictemp[1] = extrae(false, msg, PSTR("vi1")).toInt();
-  tempdefacttemp[0] = extrae(false, msg, PSTR("on0")).toInt();
-  tempdefacttemp[1] = extrae(false, msg, PSTR("on1")).toInt();
-  tempdefdestemp[0] = extrae(false, msg, PSTR("off0")).toInt();
-  tempdefdestemp[1] = extrae(false, msg, PSTR("off1")).toInt();
-  iftttpinEDtemp[0] = extrae(false, msg, PSTR("ife0")).toInt();
-  iftttpinEDtemp[1] = extrae(false, msg, PSTR("ife1")).toInt();
-  iftttpinSDtemp[0] = extrae(false, msg, PSTR("ifs0")).toInt();
-  iftttpinSDtemp[1] = extrae(false, msg, PSTR("ifs1")).toInt();
-  extrae(true, msg, PSTR("fsv")).toCharArray(fwUrlBasetemp, 80);
-  msg=vacio;
-}
-
 void ICACHE_FLASH_ATTR setupdev150HTML()
 {
   printremote();
@@ -2947,6 +3003,7 @@ void ICACHE_FLASH_ATTR setupDevRemioHTML()
 //    return;
 
 //  if (server.args()>1) { priremio = constrain(server.arg(1).toInt(),0,7); }
+  if (server.args()>2) { if (server.arg(2).toInt()==1) { addsignal(server.arg(1).toInt());  }  }
   writeHeader(false,false);
   writeMenu(3, 5);
   writeForm(sdremiohtm);
@@ -2969,9 +3026,19 @@ void ICACHE_FLASH_ATTR setupDevRemioHTML()
     byte auxmax=moddevicetemp==8266?3:maxTemp;
     for (byte i=0; i<auxmax; i++)
       {
-      printP(tr,td, t(sonda), b);
-      printI(i+1);
-      printP(td_f,td); 
+      printP(tr,td);
+        printP(td,href_i,"\"sdrio?rem=");
+        printI(iddevicetemp);
+        printP("&p=");
+        printI(i);
+        printP("&m=1\">", t(sonda));
+        printI(i+1);
+        printP(href_f,td_f);
+//      printP(t(sonda), b);
+//      printI(i+1);
+//      printP(td_f);
+      
+      printP(td); 
       printP(menor, c(tinput), b, type, ig);
       printP(comillas, c(ttext), comillas, b);
       printP(c(namet), ig);
@@ -3142,7 +3209,7 @@ void ICACHE_FLASH_ATTR setupNetHTML()
       else if (param_number>=18 && param_number <= 21) { conf.EEdns[param_number-18] = server.arg(i).toInt();  }
       else if (param_number==22) { conf.webPort = server.arg(i).toInt();  }
       else if (param_number==41) { conf.wifimode = server.arg(i).toInt(); }
-      //      else if (param_number==42) {if (nAP != 0) WiFi.SSID(StrtoInt(server.arg(i))).toCharArray(conf.ssidSTA, 20);}
+      else if (param_number==42) { server.arg(i).toCharArray(conf.ssidSTA, 20);}
       else if (param_number==43) { server.arg(i).toCharArray(conf.passSTA, 20); }
       //      else if (param_number == 44) {server.arg(i).toCharArray(conf.ssidAP,20);}
       else if (param_number==45) { server.arg(i).toCharArray(conf.passAP, 9); }
@@ -3170,7 +3237,7 @@ void ICACHE_FLASH_ATTR setupNetHTML()
   printP(tr);
   ccell(routerssid);
   printP(td);
-  printcampoC(42, conf.ssidSTA, 20, true, false, false,false);
+  printcampoC(42, conf.ssidSTA, 20, true, true, false,false);
   printP(href_i, comillas, scanap, comillas,mayor, b);
   printP(t(explorar), href_f, td_f, tr_f);
 
@@ -3582,7 +3649,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   printremote();
   if (!autOK()) { sendOther(loghtm,-1); return; }
   msg=vacio;
-  mp = 22; // número de parámetros por fila
+  mp=15; // número de parámetros por fila
   if (server.method()==HTTP_POST)
     {
     for (byte i=0; i<maxPrg; i++) setbit8(conf.bPRGeve[posacteve], i, 0);
@@ -3634,9 +3701,9 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   for (byte i=0; i<nEVE; i++) // nEVE=8
     {
     colorea=false;
-    boolean actdigital = (conf.condact[i] < 150);
+    boolean actdigital = ((conf.condact[i]>=10) && (conf.condact[i]<=21));
     mpi=mp*i;
-    indice=(i*12)+420; // parámetros del 420/426 en adelante
+    indice=(i*15); // parámetros del 420/426 en adelante
     printP(tr);
     strcpy(auxchar, svhtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
     printOpc(false, (i==posacteve), itoa(i+1,buff,10));
@@ -3648,84 +3715,84 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       printP(c(Select_name),comillas);
       printIP(mpi+2, comillas);
       printP(mayor);
-      for (byte j=0; j<maxED; j++)  { // añade entradas digitales locales
+      for (byte j=0; j<maxTemp; j++)   { // añade temperaturas locales
         pc(optionvalue);
         printPiP(comillas, j, comillas);
         if (j==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
         if (conf.showN) printPiP(mayorparen, j, parenguion); else printP(mayor);
+        printP(readdescr(filedesclocal,j,20));
+        pc(option_f);
+        }
+      for (byte j=0;j<maxEA;j++)
+        {
+        pc(optionvalue);       // entrada analógica local
+        printPiP(comillas,j+150,comillas);
+        if (j+8==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+        if (conf.showN) printPiP(mayorparen, j+8, parenguion); else printP(mayor);
+        printP(readdescr(filedesclocal,j+8,20));
+        pc(option_f);
+        }
+      for (byte j=0; j<maxED; j++)  { // añade entradas digitales locales
+        pc(optionvalue);
+        printPiP(comillas, j, comillas);
+        if (j+10==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+        if (conf.showN) printPiP(mayorparen, j+10, parenguion); else printP(mayor);
         printP(readdescr(filedesclocal,j+10,20));
         printP(c(option_f));
         }
       for (byte j=0; j<maxSD; j++)  { // añade salidas digitales locales
         pc(optionvalue);
         printPiP(comillas, j+2, comillas);
-        if (j+2==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-        if (conf.showN) printPiP(mayorparen, j+2, parenguion); else printP(mayor);
+        if (j+14==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+        if (conf.showN) printPiP(mayorparen, j+14, parenguion); else printP(mayor);
         printP(readdescr(filedesclocal,j+14,20));
         pc(option_f);
         }
-      for (byte j=0; j<maxsalrem; j++) // señales digitales remotas
-        {
-        if (conf.idsalremote[j]>0)
-          {
-          if (conf.senalrem[j]>=4)   {
-            pc(optionvalue);
-            printPiP(comillas, j+100, comillas);
-            if (j+100==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-            if (conf.showN) printPiP(mayorparen, j+100, parenguion); else printP(mayor);
-            printP(readdescr(filesalrem, j, 20));
-            pc(option_f);
-            }
-          }
-        }
-      for (byte j=0;j<maxEA;j++)
-        {
-        pc(optionvalue);       // entrada analógica local
-        printPiP(comillas,j+150,comillas);
-        if (j+150==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-        if (conf.showN) printPiP(mayorparen, j+150, parenguion); else printP(mayor);
-        printP(readdescr(filedesclocal,j+8,20));
-        pc(option_f);
-        }
-      for (byte j=0; j<maxsalrem; j++) // entradas analógicas remotas
-        if (conf.idsalremote[j]>0)
-          if (conf.senalrem[j]==3)   {
-            pc(optionvalue);
-            printPiP(comillas, j+160, comillas);
-            if (j+160 == conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-            if (conf.showN) printPiP(mayorparen, j+160, parenguion); else printP(mayor);
-            printP(readdescr(filesalrem, j,20));
-            pc(option_f);
-          }
-      for (byte j=0; j<maxTemp; j++)   { // añade temperaturas locales
-        pc(optionvalue);
-        printPiP(comillas, j+180, comillas);
-        if (j + 180 == conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-        if (conf.showN) printPiP(mayorparen, j+180, parenguion); else printP(mayor);
-        printP(readdescr(filedesclocal,j,20));
-        pc(option_f);
-        }
-      for (byte j=0; j<maxsalrem; j++) // temperaturas remotas
-        {
-        if (conf.idsalremote[j] > 32)  {
-          if (conf.senalrem[j] < 3)     {
-            pc(optionvalue);
-            printPiP(comillas, j+200, comillas);
-            if (j+200==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-            if (conf.showN) printPiP(mayorparen, j + 200, parenguion); else printP(mayor);
-            printP(readdescr(filesalrem, j, 20));
-            pc(option_f);
-            }
-          }
-        else if (conf.idsalremote[j] > 0)  {
-          pc(optionvalue);
-          printPiP(comillas, j+220, comillas);
-          if (j + 220 == conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-          if (conf.showN) printPiP(mayorparen, j + 220, parenguion); else printP(mayor);
-          printP(readdescr(filesalrem, j, 20));
-          pc(option_f);
-          }
-        }
+//      for (byte j=0; j<maxsalrem; j++) // señales digitales remotas
+//        {
+//        if (conf.idsalremote[j]>0)
+//          {
+//          if (conf.senalrem[j]>=4)   {
+//            pc(optionvalue);
+//            printPiP(comillas, j+100, comillas);
+//            if (j+100==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+//            if (conf.showN) printPiP(mayorparen, j+100, parenguion); else printP(mayor);
+//            printP(readdescr(filesalrem, j, 20));
+//            pc(option_f);
+//            }
+//          }
+//        }
+//      for (byte j=0; j<maxsalrem; j++) // entradas analógicas remotas
+//        if (conf.idsalremote[j]>0)
+//          if (conf.senalrem[j]==3)   {
+//            pc(optionvalue);
+//            printPiP(comillas, j+160, comillas);
+//            if (j+160 == conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+//            if (conf.showN) printPiP(mayorparen, j+160, parenguion); else printP(mayor);
+//            printP(readdescr(filesalrem, j,20));
+//            pc(option_f);
+//          }
+//      for (byte j=0; j<maxsalrem; j++) // temperaturas remotas
+//        {
+//        if (conf.idsalremote[j] > 32)  {
+//          if (conf.senalrem[j] < 3)     {
+//            pc(optionvalue);
+//            printPiP(comillas, j+200, comillas);
+//            if (j+200==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+//            if (conf.showN) printPiP(mayorparen, j + 200, parenguion); else printP(mayor);
+//            printP(readdescr(filesalrem, j, 20));
+//            pc(option_f);
+//            }
+//          }
+//        else if (conf.idsalremote[j] > 0)  {
+//          pc(optionvalue);
+//          printPiP(comillas, j+220, comillas);
+//          if (j + 220 == conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+//          if (conf.showN) printPiP(mayorparen, j + 220, parenguion); else printP(mayor);
+//          printP(readdescr(filesalrem, j, 20));
+//          pc(option_f);
+//          }
+//        }
       pc(optionvalue);
       printPiP(comillas, 254, comillas);
       if (254==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
@@ -3741,14 +3808,9 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       printP(c(pre_f), td_f, td);
       if (conf.bPRGeve[i][0] > 0)
         {
-        if (conf.condact[i]<2) printP(readdescr(filedesclocal, conf.condact[i]+4, 20));
-        else if (conf.condact[i]<4) printP(readdescr(filedesclocal, conf.condact[i]+4, 20));
-        else if (conf.condact[i]<150) printP(readdescr(filesalrem, conf.condact[i]-100, 20));
-        else if (conf.condact[i]<160) printP(readdescr(filesalrem, conf.condact[i]-150, 20));
-        else if (conf.condact[i]<180) printP(readdescr(filesalrem, conf.condact[i]-160, 20));
-        else if (conf.condact[i]<200) printP(readdescr(filesalrem, conf.condact[i]-180, 20));
-        else if (conf.condact[i]<254) printP(readdescr(filesalrem, conf.condact[i]-200, 20));
+        if (conf.condact[i]<22) printP(readdescr(filedesclocal, conf.condact[i], 20));
         else if (conf.condact[i]==254) pt(preciokwh);
+        else printP(vacio);
         }
       }
     printP(td_f);
@@ -3762,7 +3824,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       printP(td_f);
       printColspan(3);
       }
-    else
+    else    // activadora es analógica
       {
       if (i==posacteve)
         {
@@ -3787,10 +3849,10 @@ void ICACHE_FLASH_ATTR setupEveHTML()
         pc(td_if);
         if (conf.bPRGeve[i][0] > 0)
           {
-          printP(conf.evencomp[i] ? menoroigual : mayoroigual);
+          printP(td,conf.evencomp[i] ? menoroigual : mayoroigual,td_f);
           printP(td); printF(conf.evenvalA[i], 5); printP(td_f);
           printP(td); printF(conf.evenhis[i], 5); printP(td_f);
-        }
+          }
         else
           printColspan(3);
       }
@@ -3802,34 +3864,34 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       printP(c(Select_name),comillas);
       printI(mpi+9);
       printP(comillas, mayor);      // señal de salida
-      for (byte j=0; j < maxSD; j++)   { // salidas digitales locales
-          pc(optionvalue);
-          printPiP(comillas, j, comillas);
+      for (byte j=0; j < maxSD; j++)   { // añade salidas digitales locales, 8
+        pc(optionvalue);
+        printPiP(comillas, j, comillas);
         if (conf.evensal[i]==j) printP(b, selected, ig, comillas, selected, comillas);
         if (conf.showN) printPiP(mayorparen,j,parenguion); else printP(mayor);
         printP(readdescr(filedesclocal,j+14, 20));
         pc(option_f);
         }
-      for (byte j=0; j<maxEsc; j++) // escenas, 2
+      for (byte j=0; j<maxEsc; j++) // añade escenas, 8
         {
-          pc(optionvalue);
-          printPiP(comillas, j+2, comillas);
-        if (conf.evensal[i]==j+2) printP(b, selected, ig, comillas, selected, comillas);
+        pc(optionvalue);
+        printPiP(comillas, j+8, comillas);
+        if (conf.evensal[i]==j+8) printP(b, selected, ig, comillas, selected, comillas);
         if (conf.showN) printPiP(mayorparen, j, parenguion); else printP(mayor);
         printP(readdescr(filedescesc, j, 20));
         pc(option_f);
         }
-      for (byte j=0; j<maxsalrem; j++) // salidas remotas, 32
-        if (conf.idsalremote[j]>0)
-          if (conf.senalrem[j]>=6)
-            {
-            pc(optionvalue);
-            printPiP(comillas, j+4, comillas);
-            if (conf.evensal[i]==j+4) printP(b, selected, ig, comillas, selected, comillas);
-            if (conf.showN) printPiP(mayorparen, j+4, parenguion); else printP(mayor);
-            printP(readdescr(filesalrem,j,20));
-            pc(option_f);
-            }
+//      for (byte j=0; j<maxsalrem; j++) // salidas remotas, 32
+//        if (conf.idsalremote[j]>0)
+//          if (conf.senalrem[j]>=6)
+//            {
+//            pc(optionvalue);
+//            printPiP(comillas, j+4, comillas);
+//            if (conf.evensal[i]==j+4) printP(b, selected, ig, comillas, selected, comillas);
+//            if (conf.showN) printPiP(mayorparen, j+4, parenguion); else printP(mayor);
+//            printP(readdescr(filesalrem,j,20));
+//            pc(option_f);
+//            }
       pc(optionvalue);      // IFTTT
       printPiP(comillas, despIFTTT, comillas);
       if (conf.evensal[i]==despIFTTT) printP(b, selected, ig, comillas, selected, comillas);
@@ -3842,9 +3904,8 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       {
       if (conf.bPRGeve[i][0] > 0)
         {
-        if (conf.evensal[i] < 2) printP(readdescr(filedesclocal, conf.evensal[i] + 6, 20)); // 1-2
-        else if (conf.evensal[i] < 4) printP(readdescr(filedescesc, conf.evensal[i] - 2, 20)); // 3-4
-        else if (conf.evensal[i] < 100) printP(readdescr(filesalrem, conf.evensal[i] - 4, 20));
+        if (conf.evensal[i]<8) printP(readdescr(filedesclocal, conf.evensal[i]+14, 20)); // 1-7
+        else if (conf.evensal[i]<16) printP(readdescr(filedescesc, conf.evensal[i]-8, 20)); // 8-15
         else if (conf.evensal[i] == despIFTTT) pt(notifttt);  // 252
         }
       }
@@ -4360,7 +4421,7 @@ void ICACHE_FLASH_ATTR systemHTML()
         HTTPClient http;
         int port=msg.substring(msg.indexOf(":")+1, msg.indexOf("/")).toInt(); if (port==0) port=80;
         http.begin(msg.substring(0, msg.indexOf(":")), port, msg.substring(msg.indexOf("/"), msg.length()));
-        http.setTimeout(conf.timeoutrem);
+        http.setConnectTimeout(conf.timeoutrem);
         int httpCode = http.GET();
         http.end();
         msg=vacio;

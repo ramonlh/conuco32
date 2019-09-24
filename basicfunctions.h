@@ -218,7 +218,7 @@ int callhttpGET(char *host, int port, boolean readresp, unsigned long timeout)
 {
   HTTPClient http;
   http.begin(host,port,msg);
-  http.setTimeout(timeout);
+  http.setConnectTimeout(timeout);
   int httpCode=http.GET();
   msg="";
   if (readresp) if(httpCode==HTTP_CODE_OK) { msg=http.getString(); }

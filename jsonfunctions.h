@@ -201,7 +201,8 @@ void ICACHE_FLASH_ATTR buildJsonConf(boolean remoto, boolean sendpass, boolean r
     buildvalorI(letrai,letraf,letras,i,remoto?iftttpinSDtemp[i]:conf.iftttpinSD[i],vacio);                          // ifsn, IFTTT activo
     }
   printP(comillas,letraf,letras,letrav,comillas);
-  printP(dp,comillas,remoto?fwUrlBasetemp:conf.fwUrlBase);                                                          // fsv, URLbase
+  printP(dp,comillas,remoto?fwUrlBasetemp:conf.fwUrlBase,comillas);                                                 // fsv, URLbase
+  printP(llave_f);
 }
 
 int ICACHE_FLASH_ATTR ReqJson(int ip, int port) // pide json a remoto 
@@ -233,8 +234,11 @@ int ICACHE_FLASH_ATTR sendJsonConf(int ip, int port, boolean sendpass,boolean re
   http.addHeader(type, tPOST);
   http.addHeader(contenttype, applicationjson);
   http.addHeader(dataType, json);
-  http.setTimeout(conf.timeoutNTP);
+  http.setConnectTimeout(conf.timeoutNTP);
+  Serial.print("sendJsonConf:");Serial.print("host:");Serial.print(":");Serial.print(port);Serial.print(barrarjc);
   int httpCode=http.POST(msg);
+  Serial.print(" ");Serial.println(httpCode);
+
   if (httpCode>0) {  msg=http.getString();  }
   http.end();
   msg=vacio;
@@ -266,8 +270,10 @@ int ICACHE_FLASH_ATTR putmyjson()
     http.addHeader(type, tPOST);
     http.addHeader(contenttype, applicationjson);
     http.addHeader(dataType, "json");
-    http.setTimeout(conf.timeoutNTP);
+    http.setConnectTimeout(conf.timeoutNTP);
+    Serial.print("putmyjson:");Serial.print("host:");Serial.print(c(myjsoncom));Serial.print(80);Serial.print(":");Serial.print(auxchar);
     httpCode=http.POST(msg);
+    Serial.print(" ");Serial.println(httpCode);
 //    Serial.print("httpCode:"); Serial.print(httpCode);
 //    Serial.print("  msg:"); Serial.println(msg);
     if (httpCode>0) {
@@ -286,7 +292,7 @@ int ICACHE_FLASH_ATTR putmyjson()
     http.addHeader(type, PUT);
     http.addHeader(contenttype, applicationjson);
     http.addHeader(dataType, json);
-    http.setTimeout(conf.timeoutNTP);
+    http.setConnectTimeout(conf.timeoutNTP);
     httpCode=http.sendRequest(PUT,msg);
     msg=http.getString(); 
     }

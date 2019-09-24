@@ -274,7 +274,7 @@ void ICACHE_FLASH_ATTR HtmlGetStateTime()
 {
   printColspan(2);
   printTime();
-  printP(b, c(PRG), b, (countfaulttime < conf.TempDesactPrg) ? ON : OFF, b);
+  printP(b, c(PRG), b);
   printI(ESP.getFreeHeap());
   printP(td_f);
 }

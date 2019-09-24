@@ -1,9 +1,10 @@
-//#define ESP32
 
-#define INITFAB false    // si true, se resetea a fábrica, si false no se hace nada
-#define versinst 2002    // primera versión ESP32 
+
+#define INITFAB true    // si true, se resetea a fábrica, si false no se hace nada
+#define versinst 2008    // primera versión ESP32 
 #define debug true
 #define debugwifi false
+
 
 #include "commontexts.h"              // include
 #include <IoTtweetESP32.h>            // Local
@@ -88,10 +89,7 @@ void initDS18B20()
 
 void initEntDig()
 {
-  Serial.print(c(tinput)); Serial.print(dp); Serial.println(c(modet));
-//  for (byte i=0;i<maxED;i++) pinMode(edPin[i], INPUT);  
   for (byte i=0;i<maxED;i++) pinMode(edPin[i], INPUT);  
-//  for (byte i=0;i<maxDHT;i++) if (conf.tipoED[i]==2) dht[i].setup(DHT0);
   dht[0].setup(25);
 }
 
@@ -112,9 +110,10 @@ void initSalDig()
 void initWiFi()
 {
   // Init WiFi
+  if (conf.wifimode>2) conf.wifimode=2;
   if (conf.wifimode==0) WiFi.mode(WIFI_STA);
   else if (conf.wifimode==1) WiFi.mode(WIFI_AP);
-  else if ((conf.wifimode==2) or (conf.wifimode==12)) WiFi.mode(WIFI_AP_STA);
+  else if (conf.wifimode==2) WiFi.mode(WIFI_AP_STA);
   WiFi.setAutoConnect(true);
   WiFi.setAutoReconnect(true);
   dPrint(t(wifimodet)); dPrint(dp); dPrintI(conf.wifimode); dPrint(crlf);
@@ -133,25 +132,11 @@ void initWiFi()
   if ((conf.wifimode==0) || (conf.wifimode==2) || (conf.wifimode==12)) // STA o AP+STA
     {
     dPrint(t(staticip));  dPrint(dp); dPrint(conf.staticIP?t(SI):t(NO)); dPrint(coma);
+    if (conf.staticIP == 1)
+      {
+      WiFi.config(conf.EEip, conf.EEgw, conf.EEmask, conf.EEdns, conf.EEdns2);
+      }
     for (byte i=0;i<4;i++) {Serial.print(conf.EEdns[i]); Serial.print(".");}
-    Serial.println();
-    if (conf.staticIP==1) 
-      if (WiFi.config(conf.EEip, conf.EEgw, conf.EEmask, conf.EEdns, conf.EEdns2)==1)
-        {
-        Serial.println("");
-        Serial.println("WiFi connected!");
-        Serial.print("IP address: ");
-        Serial.println(WiFi.localIP());
-        Serial.print("ESP Mac Address: ");
-        Serial.println(WiFi.macAddress());
-        Serial.print("Subnet Mask: ");
-        Serial.println(WiFi.subnetMask());
-        Serial.print("Gateway IP: ");
-        Serial.println(WiFi.gatewayIP());
-        Serial.print("DNS: ");
-        Serial.println(WiFi.dnsIP());
-        }
-      { dPrint(WiFi.config(conf.EEip, conf.EEgw, conf.EEmask, conf.EEdns, conf.EEdns2)==1?ok:c(terror)); }
     dPrint(crlf);
     WiFi.begin(conf.ssidSTA, conf.passSTA, true);
     if (debugwifi) Serial.setDebugOutput(true);
@@ -161,18 +146,11 @@ void initWiFi()
     dPrint(crlf); dPrint(t(tconectado)); dPrint(b); dPrint(WiFi.isConnected()?ok:c(terror)); dPrint(crlf);
     dPrint(c(tIP)); dPrint(dp); Serial.print(WiFi.localIP()); dPrint(crlf);
     dPrint(c(tport)); dPrint(dp); Serial.print(conf.webPort); dPrint(crlf);
+    Serial.print("ESP Mac Address: ");    Serial.println(WiFi.macAddress());
+    Serial.print("Subnet Mask: ");    Serial.println(WiFi.subnetMask());
+    Serial.print("Gateway IP: ");    Serial.println(WiFi.gatewayIP());
+    Serial.print("DNS: ");    Serial.println(WiFi.dnsIP());
     }
-}
-
-void connectWiFi()
-{
-  // Wait for connection
-  byte cont=0;
-  while ((!WiFi.isConnected()) && (cont++<20))  { delay(500); dPrint(punto); }
-  Serial.println();
-  Serial.print("Connected to ");  Serial.println(conf.ssidSTA);
-  Serial.print("IP address: ");  Serial.println(WiFi.localIP());
-  if (MDNS.begin("esp32")) { Serial.println("MDNS responder started"); }
 }
 
 void initTime()
@@ -205,18 +183,16 @@ void initPins()
   // reasignación de GPIOs según leído en fichero conf
   for (byte i=0;i<maxED;i++) { edPin[i]=conf.ngpio[i+10]; pinMode(edPin[i],INPUT); }
   for (byte i=0;i<maxSD;i++) { sdPin[i]=conf.ngpio[i+14]; pinMode(sdPin[i],OUTPUT); }
+  pinMode(RX433,INPUT_PULLUP);
 }
 
 void initWebserver() { server.begin();  Serial.println("HTTP server started"); }
-void initPubSub() 
-{  
-  PSclient.setServer(conf.mqttserver, 1883);
-  PSclient.setCallback(mqttcallback);
-}
+void initPubSub() { PSclient.setServer(conf.mqttserver, 1883); PSclient.setCallback(mqttcallback); }
 
 void init433()
 {
-  mySwitch.enableReceive(RX433);  // Receiver on interrupt 0 => that is pin #32,
+  pinMode(RX433,INPUT_PULLUP);
+  mySwitch.enableReceive(RX433);  // Receiver on interrupt 32 => that is pin #32,
 //  mySwitch.enableTransmit(tx433);  // 15
 }
 
@@ -245,13 +221,14 @@ void initIFTTT()
 void ICACHE_FLASH_ATTR setup(void) {
   initSerial();
   initSPIFSS(true,true);
+  if (INITFAB) initFab();   // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   leerConf();  //  saveconf();
   initPins();
   initDS18B20();
   initEntDig();
   initSalDig();
   initbmp085();
-  initWiFi(); if (conf.wifimode!=1) connectWiFi();
+  initWiFi();
   initFTP(); 
   initHTML();
   initTime();
@@ -297,13 +274,181 @@ void testChange()
     }
 }
 
+void execcom()
+{
+  String command, param;
+  command=sinput.substring(0,sinput.indexOf(","));
+  param=sinput.substring(sinput.indexOf(",")+1);
+//  Serial.print("comando/param: "); Serial.print(command);Serial.print("/");Serial.println(param);
+  if (command=="reset") ESP.restart();
+  else if (command=="files")  
+    { 
+    File dir=SPIFFS.open(barra);
+    File file=dir.openNextFile();
+    while (file) { Serial.print(file.name()); Serial.print(b); Serial.println(file.size()); file=dir.openNextFile(); }
+    Serial.print("files ");  Serial.println(checkfiles()?"OK":"ERROR");
+    }
+  else if ((command=="help") || (command=="h"))
+    {   
+    Serial.println("reset");
+    Serial.println("files");
+    Serial.println("st");
+    Serial.println("id,iddevice");
+    Serial.println("alias,aliasdevice");
+    Serial.println("instal,instaldevice");
+    Serial.println("ssid,SSIDname");
+    Serial.println("pass,SSIDpass");
+    Serial.println("seg,segnet");
+    }
+  else if (command=="st")  
+    {   
+    Serial.print("DEV:"); Serial.println(conf.iddevice);
+    Serial.print("alias:"); Serial.println(conf.aliasdevice);
+    Serial.print("IP:"); Serial.println(WiFi.localIP());
+    Serial.print("mask:"); Serial.println(WiFi.subnetMask());
+    Serial.print("GW:"); Serial.println(WiFi.gatewayIP());
+//    Serial.print("SSID:"); Serial.println(WiFi.SSID());
+//    Serial.print("Pass:"); Serial.println(WiFi.psk());
+    Serial.print("SSID:"); Serial.println(conf.ssidSTA);
+    Serial.print("Pass:"); Serial.println(conf.passSTA);
+    Serial.print("Conn:"); Serial.println(WiFi.isConnected()?ok:c(terror));
+    Serial.println("Done");
+    }
+  else if (command=="id") { conf.iddevice=param.toInt(); conf.EEip[3]=conf.iddevice; param.toCharArray(conf.mqttpath[2],10); saveconf(); Serial.println("Done");}
+  else if (command=="alias") { param.toCharArray(conf.aliasdevice,20); saveconf(); }
+  else if (command=="instal") { param.toCharArray(conf.instname,10); param.toCharArray(conf.mqttpath[1],10);saveconf(); Serial.println("Done");}
+  else if (command=="ssid") { param.toCharArray(conf.ssidSTA,20); saveconf();Serial.println("Done"); }
+  else if (command=="pass") { param.toCharArray(conf.passSTA,20); saveconf(); Serial.println("Done");}
+  else if (command=="seg") { conf.netseg=param.toInt(); conf.EEip[2]=conf.netseg; conf.EEgw[2]=conf.netseg; saveconf(); Serial.println("Done");}
+  else { Serial.println("Command not found"); }
+}
+
+//void execcom()
+//{
+//  String command, param;
+//  boolean hecho=false;
+//  command = sinput.substring(0, sinput.indexOf(","));
+//  param = sinput.substring(sinput.indexOf(",") + 1);
+//  //  Serial.print("comando/param: "); Serial.print(command);Serial.print("/");Serial.println(param);
+//  if (command == "reset") 
+//    ESP.restart();  
+////  else if (command == "resetw") 
+////    reinitWiFi();
+//  else if (command == "resetf") 
+//    initFab();
+////  else if (command == "files")
+////    {
+////    Dir dir = SPIFFS.openDir(barra);
+////    while (dir.next())  {
+////      Serial.print(dir.fileName());
+////      Serial.print(b);
+////      File f = dir.openFile(letrar);
+////      Serial.println(f.size());
+////      }
+////    Serial.print("files ");  Serial.println(checkfiles() ? "OK" : "ERROR");
+////    }
+//  else if ((command == "help") || (command == "h"))
+//    {
+//    Serial.println("reset");
+//    Serial.println("resetw");
+//    Serial.println("resetf");
+//    Serial.println("wifim");
+//    Serial.println("files");
+//    Serial.println("st");
+//    Serial.println("id,iddevice");
+//    Serial.println("alias,aliasdevice");
+//    Serial.println("instal,instaldevice");
+//    Serial.println("ssid,SSIDname");
+//    Serial.println("pass,SSIDpass");
+//    Serial.println("ssidap,SSIDnameAP");
+//    Serial.println("passap,SSIDpassAP");
+//    Serial.println("seg,segnet");
+//    }
+//  else if (command == "st")
+//    {
+//    Serial.print("DEV:"); Serial.println(conf.iddevice);
+//    Serial.print("alias:"); Serial.println(conf.aliasdevice);
+//    Serial.print("IP:"); for (byte i=0;i<4;i++) {Serial.print(conf.EEip[i]);Serial.print(punto); } Serial.println();
+//    Serial.print("mask:"); for (byte i=0;i<4;i++) {Serial.print(conf.EEmask[i]); Serial.print(punto);}Serial.println();
+//    Serial.print("GW:");for (byte i=0;i<4;i++) {Serial.print(conf.EEgw[i]);Serial.print(punto); }Serial.println();
+//    Serial.print("SSID:"); Serial.println(conf.ssidSTA);
+//    Serial.print("Pass:"); Serial.println(conf.passSTA);
+//    Serial.print("SSIDAP:"); Serial.println(conf.ssidAP);
+//    Serial.print("PassAP:"); Serial.println(conf.passAP);
+//    Serial.print("Conn:"); Serial.println(WiFi.isConnected() ? ok : c(terror));
+//    Serial.println("Done");
+//    }
+//  else if (command == "id") {
+//    conf.iddevice = param.toInt();
+//    conf.EEip[3] = conf.iddevice;
+//    param.toCharArray(conf.mqttpath[2], 10);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "alias") {
+//    param.toCharArray(conf.aliasdevice, 20);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "instal") {
+//    param.toCharArray(conf.instname, 10);
+//    param.toCharArray(conf.mqttpath[1], 10);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "ssid") {
+//    param.toCharArray(conf.ssidSTA, 20);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "pass") {
+//    param.toCharArray(conf.passSTA, 20);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "ssidap") {
+//    param.toCharArray(conf.ssidAP, 20);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "passap") {
+//    param.toCharArray(conf.passAP, 20);
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "wifim") {
+//    conf.wifimode = param.toInt();
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "ip0") {
+//    conf.EEip[0] = param.toInt();
+//    conf.EEgw[0] = param.toInt();
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "ip1") {
+//    conf.EEip[1] = param.toInt();
+//    conf.EEgw[1] = param.toInt();
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "ip2") {
+//    conf.EEip[2] = param.toInt();
+//    conf.EEgw[2] = param.toInt();
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "ip3") {
+//    conf.EEip[3] = param.toInt();
+//    conf.EEgw[3] = 1;
+//    saveconf(); hecho=true;
+//    }
+//  else if (command == "seg") {
+//    conf.netseg = param.toInt();
+//    conf.EEip[2] = conf.netseg;
+//    conf.EEgw[2] = conf.netseg;
+//    saveconf(); hecho=true;
+//    }
+//  Serial.println(hecho?"Done":"Command not found");
+//}
+
 void task1()
 {
   tini=millis();
   countfaulttime++;   // si se hace mayor que TempDesactPrg,desactiva ejecucion programas dependientes de fecha
   leevaloresAN();
   // gestión botón reset InitFabrica
-  if (countfaulttime < conf.TempDesactPrg) procesaeventos();
+  procesaeventos();
   procesaTimeMax();
   for (byte j=0; j<maxsalrem; j++)
     if (conf.idsalremote[j]>0)
@@ -352,15 +497,8 @@ void task60()     // 60 segundos
 {
   tini = millis();
   memset(bevenENABLE, sizeof(bevenENABLE),0);
-  if (countfaulttime < conf.TempDesactPrg)      {
-    procesaSemanal();
-    procesaFechas();
-    }
-  else
-    {
-    timeClient.setTimeOffset(7200);
-    if (timeClient.update()==1) { countfaulttime=0; setTime(timeClient.getEpochTime());  }
-    }
+  procesaSemanal();
+  procesaFechas();
   if ((millis() - tini) > 5000) { Serial.print(60); Serial.print(F(" SEG:")); Serial.println(millis() - tini); }
   mact60 = millis();
 }
@@ -381,6 +519,12 @@ void task3600()         // 3600 segundos=1 hora
 void loop(void) {
   unsigned long tini = millis();
   tini=millis();
+  if (Serial.available())
+    {
+    char thisChar = Serial.read();
+    if ((thisChar=='\n') || (thisChar=='\r')) { execcom(); sinput="";  }
+    else { sinput=sinput+thisChar;  }
+    }
   handleRF();
   if (conf.ftpenable) ftpSrv.handleFTP();          
   server.handleClient();
