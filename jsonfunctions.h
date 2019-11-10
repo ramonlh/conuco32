@@ -70,7 +70,7 @@ void ICACHE_FLASH_ATTR buildJson()
     else if (conf.tipoED[i]==2)
       {
       buildvalorI(letrae,vacio,vacio,i,2,vacio);   // DHT
-      buildvalorF(letrad,letrah,letrat,i,dhtdata[i][0],2,vacio);   // temperartura
+      buildvalorF(letrad,letrah,letrat,i,dhtdata[i][0],2,vacio);   // temperatura
       buildvalorF(letrad,letrah,letrah,i,dhtdata[i][1],2,vacio);   // humedad
       }
     }

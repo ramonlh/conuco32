@@ -6,11 +6,13 @@
   #define maxerrorrem 5
   #define SLAVE 0
   #define MASTER 1
+  #define maxgpio 26
+  #define maxgpiovar 12
   #define maxED 4         // número entradas digitales
   #define maxSD 8        // número salidas digitales + reléss
   #define maxEA 2         // número ADC
   #define maxDAC 2        // número DAC
-  #define maxDHT 2        // número DHT
+  #define maxDHT 2  
   #define maxTemp 8       // número máximo de sondas ds18B20
   #define maxWire 2       // número de puertos 1 wire
   #define maxTouch 5      // número máximo de pines touch
@@ -23,6 +25,7 @@
   #define maxwebcalls 4   // número máximo de web calls
   #define maxparam 14     // número máximo parámetros LCD
   #define maxpaneles 10   // número máximo de paneles
+  #define maxsensortype 30 
   
   // placa grande. 80x75
   #define I0 35    // OK    // Inputs
@@ -50,15 +53,12 @@
   #define SDA 21          // I2C-SDA / O6
   #define SCL 22          // I2C-SCL / O7
 
-  #define ADC0 27         // ADC0 / T3
-  #define ADC1 4          // ADC1 / T4
+  #define ADC0 32         // ADC0 / T3    No se puede usar el 27 con WiFi-> usar 32
+  #define ADC1 33         // ADC1 / T4    No se puede usar el 4 con WiFi-> usar 33
   
   #define DAC0 26         // DAC1 / W0
   #define DAC1 25         // DAC1 / DHT
   
-  #define DHT0 25         // DHT0 / DAC1
-  #define DHT1 26         // DHT1 / DAC0
-
   #define W0 26          // 1 wire port / DAC0
 //  #define W1 25          // 1 wire port / DAC0
 
@@ -68,10 +68,9 @@
 //  #define T3 27
 //  #define T4 33
 
-  #define RX433 32
+  #define RX433 4
   #define TX433 2         // T0
 
-//  #define RTC_GPIO10 4
   #define baseAna 8
 
 //// BOMBA DE CALOR AGUA-AGUA

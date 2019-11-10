@@ -1,15 +1,13 @@
 
-
-#define INITFAB true    // si true, se resetea a fábrica, si false no se hace nada
-#define versinst 2008    // primera versión ESP32 
+#define INITFAB false    // si true, se resetea a fábrica, si false no se hace nada
+#define versinst 2028    // primera versión ESP32 
 #define debug true
 #define debugwifi false
 
+#include "commontexts.h"              // setupio
 
-#include "commontexts.h"              // include
 #include <IoTtweetESP32.h>            // Local
 #include "defines.h"                  // include
-#include "bombacalor.h"               // include
 #include "variables.h"                // include
 
 #include <WiFi.h>
@@ -18,12 +16,12 @@
 #include <Update.h>  
 #include <ESPmDNS.h>
 #include <ESP8266FtpServer.h>
-#include "Time.h"                     // Local
+#include "Time.h"                     // Local 
 #include "TimeLib.h"                  // Localc
 #include "FS.h"
 #include "SPIFFS.h"
 #include <HTTPClient.h>               
-#include "RCSwitch.h"                 // Local
+#include <RCSwitch.h>                 // Local
 #include "OneWire.h"                  // Local
 #include "DallasTemperature.h"        // Local
 #include "DHTesp.h"                   // Local
@@ -34,7 +32,18 @@
 #include <ModbusMaster.h>             // Local
 #include <WiFiUdp.h>
 #include <NTPClient.h>                // Local
-#include <ResponsiveAnalogRead.h>
+//#include <ResponsiveAnalogRead.h>
+///////////////////////////////
+#include <Thermistor.h>
+#include <NTC_Thermistor.h>
+//#define SENSOR_PIN             A1
+#define SENSOR_PIN             ADC0
+#define REFERENCE_RESISTANCE   8000
+#define NOMINAL_RESISTANCE     100000
+#define NOMINAL_TEMPERATURE    25
+#define B_VALUE                3950
+Thermistor* thermistor;
+//////////////////////////////////////////
 
 FtpServer ftpSrv;   //set #define FTP_DEBUG in ESP8266FtpServer.h to see ftp verbose on serial
 WebServer server(conf.webPort); 
@@ -47,8 +56,8 @@ WiFiClient espClient;
 PubSubClient PSclient(espClient);
 ModbusMaster MBnode;
 WiFiUDP ntpUDP;
-ResponsiveAnalogRead analog0(4, true);
-ResponsiveAnalogRead analog1(27, true);
+//ResponsiveAnalogRead analog0(4, true);
+//ResponsiveAnalogRead analog1(27, true);
 
 //NTPClient timeClient(ntpUDP, urlNTPserverpool, 3600, 60000);
 NTPClient timeClient(ntpUDP, "europe.pool.ntp.org");
@@ -61,6 +70,7 @@ OneWire owire(owPin);   DallasTemperature sensors0(&owire);
 #include "conuco32.h"                  // include
 #include "jsonfunctions.h"             // include
 #include "main.h"                      // include
+#include "bombacalor.h"               // include
 
 void initSPIFSS(boolean testfiles, boolean format)
 {
@@ -74,38 +84,33 @@ void initDS18B20()
 {
   sensors0.begin();  
   sensors0.setResolution(conf.prectemp);  
-  nTemp=sensors0.getDeviceCount();  
-  
-  dPrint(t(sondastemp)); dPrint(dp); dPrintI(nTemp);dPrint(crlf);
-  dPrint(b); dPrint(t(Modo)); dPrint(dp);
+  nTemp=sensors0.getDeviceCount(); if (nTemp>maxTemp) nTemp=maxTemp;
+  dPrint(t(sondastemp)); dPrint(dp); dPrintI(nTemp);dPrint(crlf); dPrint(b); dPrint(t(Modo)); dPrint(dp);
   dPrint((sensors0.isParasitePowerMode())?c(tparasite):c(tpower)); dPrint(crlf);
   for (byte i=0; i<nTemp; i++)       {
-    
     if (sensors0.getAddress(addr1Wire[i], i))    {
       dPrint(b);
       for (uint8_t j=0; j<8; j++) { if (addr1Wire[i][j]<16) dPrint(cero); Serial.print(addr1Wire[i][j], HEX); }
       dPrint(crlf);      }     }
 }
 
-void initEntDig()
-{
-  for (byte i=0;i<maxED;i++) pinMode(edPin[i], INPUT);  
-  dht[0].setup(25);
-}
+void initEntAna() { for (byte i=0;i<maxEA;i++) pinMode(anaPin[i], INPUT);  }
 
+void initEntDig() { for (byte i=0;i<maxED;i++) pinMode(edPin[i], INPUT);  }
+
+void initSalDig()
+  {
+  for (byte i=0; i<maxSD; i++)
+    {
+    pinMode(sdPin[i],OUTPUT);
+    digitalWrite(sdPin[i],valorpin[conf.valinic[i]==2?getbit8(conf.MbC8,i):conf.valinic[i]]);
+    }
+  }
 void initbmp085()
 {
   if (bmp085.begin()) {bmp085enabled=true; Serial.println(c(BMP085OK));} else { Serial.print(b);  Serial.println(c(BMP085notfound));  }  
 }
 
-void initSalDig()
-{
-  for (byte i=0; i<maxSD; i++)
-    {
-    pinMode(sdPin[i], OUTPUT);
-    digitalWrite(sdPin[i], valorpin[conf.valinic[i]>1?getbit8(conf.MbC8,sdPin[i]-12):conf.valinic[i]]);
-    }
-}
 
 void initWiFi()
 {
@@ -173,17 +178,14 @@ void initFTP()
   ftpSrv.begin(admin,admin);    //username, password for ftp.  set ports in ESP8266FtpServer.h  (default 21, 50009 for PASV)
 }
 
-void initSerial()
-{
-  Serial.begin(115200);  delay(10);
-}
+void initSerial() { Serial.begin(115200);  delay(10); }
 
-void initPins()
+void asignPins()
 {
   // reasignación de GPIOs según leído en fichero conf
-  for (byte i=0;i<maxED;i++) { edPin[i]=conf.ngpio[i+10]; pinMode(edPin[i],INPUT); }
-  for (byte i=0;i<maxSD;i++) { sdPin[i]=conf.ngpio[i+14]; pinMode(sdPin[i],OUTPUT); }
-  pinMode(RX433,INPUT_PULLUP);
+//  for (byte i=0;i<maxED;i++) { edPin[i]=conf.ngpio[i+10]; }
+//  for (byte i=0;i<maxSD;i++) { sdPin[i]=conf.ngpio[i+14]; }
+
 }
 
 void initWebserver() { server.begin();  Serial.println("HTTP server started"); }
@@ -194,6 +196,19 @@ void init433()
   pinMode(RX433,INPUT_PULLUP);
   mySwitch.enableReceive(RX433);  // Receiver on interrupt 32 => that is pin #32,
 //  mySwitch.enableTransmit(tx433);  // 15
+}
+
+void initLCD()
+{
+  if (conf.I2Cenabled==1) { lcd.init();  lcd.backlight(); lcdshowstatus(); }
+}
+
+void initgpiosvar()
+{
+for (byte i=0;i<maxgpiovar;i++)
+  {
+    
+  }
 }
 
 void leerConf()
@@ -207,7 +222,6 @@ void initIFTTT()
   if (WiFi.isConnected()) {
     if (conf.iftttenable) 
       {
-        Serial.println("ifttttrigger");
       strcpy(auxdesc,itoa(WiFi.localIP()[0],buff,10)); 
       for (byte i=1;i<=3;i++) { strcat(auxdesc,"."); strcat(auxdesc,itoa(WiFi.localIP()[i],buff,10)); }
       ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, auxdesc, conf.myippub);
@@ -223,11 +237,10 @@ void ICACHE_FLASH_ATTR setup(void) {
   initSPIFSS(true,true);
   if (INITFAB) initFab();   // XXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
   leerConf();  //  saveconf();
-  initPins();
+  asignPins();
   initDS18B20();
   initEntDig();
   initSalDig();
-  initbmp085();
   initWiFi();
   initFTP(); 
   initHTML();
@@ -236,7 +249,11 @@ void ICACHE_FLASH_ATTR setup(void) {
   initPubSub();
   initIFTTT();
   checkMyIP();  dPrint(t(ippublica)); dPrint(dp); dPrint(conf.myippub); dPrint(crlf);
-  init433();
+  initLCD();
+//  initbmp085();
+//  init433();
+  initgpiosvar();
+  thermistor = new NTC_Thermistor(SENSOR_PIN,REFERENCE_RESISTANCE,NOMINAL_RESISTANCE,NOMINAL_TEMPERATURE,B_VALUE);  
 }
 
 void testChange()
@@ -307,8 +324,6 @@ void execcom()
     Serial.print("IP:"); Serial.println(WiFi.localIP());
     Serial.print("mask:"); Serial.println(WiFi.subnetMask());
     Serial.print("GW:"); Serial.println(WiFi.gatewayIP());
-//    Serial.print("SSID:"); Serial.println(WiFi.SSID());
-//    Serial.print("Pass:"); Serial.println(WiFi.psk());
     Serial.print("SSID:"); Serial.println(conf.ssidSTA);
     Serial.print("Pass:"); Serial.println(conf.passSTA);
     Serial.print("Conn:"); Serial.println(WiFi.isConnected()?ok:c(terror));
@@ -355,14 +370,8 @@ void execcom()
 //    Serial.println("wifim");
 //    Serial.println("files");
 //    Serial.println("st");
-//    Serial.println("id,iddevice");
-//    Serial.println("alias,aliasdevice");
-//    Serial.println("instal,instaldevice");
-//    Serial.println("ssid,SSIDname");
-//    Serial.println("pass,SSIDpass");
 //    Serial.println("ssidap,SSIDnameAP");
 //    Serial.println("passap,SSIDpassAP");
-//    Serial.println("seg,segnet");
 //    }
 //  else if (command == "st")
 //    {
@@ -455,41 +464,39 @@ void task1()
       if ((conf.senalrem[j]==6) || (conf.senalrem[j]==7)) contaremote[j]++;
   if (WiFi.isConnected()) { testChange();  }
   mact1 = millis();
+  // Reads temperature
+//  const double celsius = thermistor->readCelsius();
+//  const double kelvin = thermistor->readKelvin();
+//  const double fahrenheit = thermistor->readFahrenheit();
+//  // Output of information
+//  Serial.print("Temperature: ");  
+//  Serial.print(celsius);  Serial.print(" C, ");  
+//  Serial.print(kelvin);  Serial.print(" K, ");  
+//  Serial.print(fahrenheit);  Serial.println(" F");
 }
 
 void taskvar()
 {
   tini=millis();
-//    if (!pendsave) lcdshowstatus();
+  lcdshowstatus();
   leevaloresOW();
-  procesaconsignas();
-//  if (WiFi.isConnected()) {
-//    unsigned long tini = millis();
-//    if (conf.modomyjson == 1) { putmyjson(); }
-//    if (conf.mododweet == 1) { postdweet(mac); }
-//    if (conf.iottweetenable == 1) { postIoTweet(); }
-  actualizaremotos();
   for (byte i=0;i<1;i++) leevaloresDHT(i);
-//  if (WiFi.isConnected()) {
+  procesaconsignas();
+  if (WiFi.isConnected()) {
+    if (conf.modomyjson == 1) { putmyjson(); }
+    if (conf.mododweet == 1) { postdweet(mac); }
+    if (conf.iottweetenable == 1) { postIoTweet(); }
+    actualizaremotos();
     if (conf.mqttenable) 
       {  
       if (!PSclient.connected())  { 
-//        Serial.print("NO CONECTADO-"); 
         if (mqttreconnect()) {  
-//          Serial.println("Resubscribiendo"); 
           mqttsubscribevalues();  }   }
       if ( PSclient.connected())  {
-//        Serial.println("Ya conectado");  
         mqttpublishvalues();  }  
       }
-//  for (byte i=0;i<maxED;i++) if (conf.tipoED[i]==2)  leevaloresDHT(i);
-//    unsigned long tini = millis();
-//    if (conf.modomyjson == 1) { putmyjson(); }
-//    if (conf.mododweet == 1) { postdweet(mac); }
-//    if (conf.iottweetenable == 1) { postIoTweet(); }
-////      actualizamasters();
-//    }
-  if ((millis()-tini)>5000) {printhora(); Serial.print(F(" 10 SEG:")); Serial.println(millis()-tini);}
+    }
+  if ((millis()-tini)>5000) {printhora(); Serial.print(F(" 5 SEG:")); Serial.println(millis()-tini);}
   mact10 = millis();
 }
 
@@ -516,34 +523,44 @@ void task3600()         // 3600 segundos=1 hora
   mact3600 = millis();
 }
 
+void modonormal()   // modo general
+  {
+  }
+
 void loop(void) {
-  unsigned long tini = millis();
-  tini=millis();
-  if (Serial.available())
+  if (conf.modohp!=1) 
     {
-    char thisChar = Serial.read();
-    if ((thisChar=='\n') || (thisChar=='\r')) { execcom(); sinput="";  }
-    else { sinput=sinput+thisChar;  }
+    tini=millis();
+    if (Serial.available()) { char tChar = Serial.read(); if ((tChar=='\n') || (tChar=='\r')) { execcom(); sinput="";  } else { sinput=sinput+tChar;  } }
+    handleRF();
+    if (conf.ftpenable) ftpSrv.handleFTP();          
+    server.handleClient();
+    PSclient.loop(); 
+    leevaloresDIG();
+    //  analog0.update();
+    //  analog1.update();
+    //////////////////////////////////////////////////////////////////////////////////////////
+    if ((millis() > (mact1 + 1000))) { task1(); }                     // tareas que se hacen cada segundo
+    if ((millis() > (mact10 + (conf.peractrem * 1000)))) { taskvar(); }  // tareas que se hacen cada "peractrem" segundos
+    if ((millis() > (mact60 + 60000))) { task60; }   // tareas que se hacen cada 60 segundos:1 minuto
+    if ((millis() > (mact3600 + 3600000))) { task3600(); }   // tareas que se hacen cada 3600 segundos:1 hora
+    if ((millis() > (mact86400 + 86400000)))    // tareas que se hacen cada 86400 segundos: 1 día
+      {
+      tini = millis();
+      if (WiFi.isConnected()) { if (conf.iftttenable) ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, "MyIP", conf.myippub); }
+          if (millis()-tini>1000) {Serial.print(F("1 día.:")); Serial.println(millis()-tini);}
+      mact86400 = millis();
+      }
     }
-  handleRF();
-  if (conf.ftpenable) ftpSrv.handleFTP();          
-  server.handleClient();
-  PSclient.loop(); 
-  leevaloresDIG();
-  analog0.update();
-  analog1.update();
-  if (conf.modohp==1) procesaHP();
-  //////////////////////////////////////////////////////////////////////////////////////////
-  if ((millis() > (mact1 + 1000))) { task1(); }                     // tareas que se hacen cada segundo
-  if ((millis() > (mact10 + (conf.peractrem * 1000)))) { taskvar(); }  // tareas que se hacen cada "peractrem" segundos
-  if ((millis() > (mact60 + 60000))) { task60; }   // tareas que se hacen cada 60 segundos:1 minuto
-  if ((millis() > (mact3600 + 3600000))) { task3600(); }   // tareas que se hacen cada 3600 segundos:1 hora
-  if ((millis() > (mact86400 + 86400000)))    // tareas que se hacen cada 86400 segundos: 1 día
+  else if (conf.modohp==1) 
     {
-    tini = millis();
-//    if (WiFi.isConnected()) { if (conf.iftttenable) ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, "MyIP", conf.myippub); }
-    //    if (millis()-tini>1000) {Serial.print(F("1 día.:")); Serial.println(millis()-tini);}
-    mact86400 = millis();
+    tini=millis();
+    if (Serial.available()) { char tChar = Serial.read(); if ((tChar=='\n') || (tChar=='\r')) { execcom(); sinput="";  } else { sinput=sinput+tChar;  } }
+    if (conf.ftpenable) ftpSrv.handleFTP();          
+    server.handleClient();
+    leevaloresDIG();
+    if ((millis() > (mact1 + 1000))) { task1hp();   }      // tareas que se hacen cada segundo
+    if ((millis() > (mact10 + 10000))) { task10hp(); }  // tareas que se hacen cada 10 segundos
     }
 }
 

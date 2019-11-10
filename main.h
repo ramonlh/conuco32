@@ -1,4 +1,4 @@
-
+  
 void ICACHE_FLASH_ATTR mqttpublish(int i)
 {
     strcpy(auxdesc,conf.mqttpath[0]); strcat(auxdesc,"/");
@@ -376,8 +376,17 @@ void ICACHE_FLASH_ATTR leevaloresAN()
 { 
   for (byte i=0;i<maxEA;i++)
     {
-    MbR[baseAna+i]=analogRead(anaPin[i]); MbRant[baseAna+i]=MbR[baseAna+i];   // anaPin[]: ADC= y ADC1
+    MbR[baseAna+i]=analogRead(conf.ngpio[i+8]); MbRant[baseAna+i]=MbR[baseAna+i];   // anaPin[]: ADC0 y ADC1
     }
+  // Reads temperature
+//  const double celsius = thermistor->readCelsius();
+//  const double kelvin = thermistor->readKelvin();
+//  const double fahrenheit = thermistor->readFahrenheit();
+//  // Output of information
+//  Serial.print("Temperature: ");  
+//  Serial.print(celsius);  Serial.print(" C, ");  
+//  Serial.print(kelvin);  Serial.print(" K, ");  
+//  Serial.print(fahrenheit);  Serial.println(" F");
 }
 
 void ICACHE_FLASH_ATTR leevaloresOW()
@@ -566,23 +575,26 @@ int ICACHE_FLASH_ATTR actualizaremotos()    // pide datos a remotos
   int auxerr = 0;
   for (byte i=0; i<maxdevrem; i++)
     {
-    if ((conf.idremote[i]<150) || (conf.idremote[i]>166))
+    if (conf.idremote[i]>0)
       {
-      strcpy (auxdesc, vacio); savedescr(fileidmyjsonrem, auxdesc, i, 10);
-      strcpy (auxdesc, vacio); savedescr(filemacdevrem, auxdesc, i, 14);
-      }
-    else
-      {
-      if (actirem[i])
+      if ((conf.idremote[i]<150) || (conf.idremote[i]>166))
         {
-        auxerr=ReqJson(conf.idremote[i], conf.webPort); 
-        if (auxerr>=0) { parseJsonremoto();  } // pone los valores en la variable "datosremoto" y en el remoto correspondiente
-        else { timerem[i]++; if (timerem[i] >= maxerrorrem) { setactivarem(i, false); timerem[i] = 0; }   }
-        msg = vacio;
+         strcpy (auxdesc, vacio); savedescr(fileidmyjsonrem, auxdesc, i, 10);
+         strcpy (auxdesc, vacio); savedescr(filemacdevrem, auxdesc, i, 14);
         }
-      else { timerem[i]++; if (timerem[i] >= 1)    { setactivarem(i, true); timerem[i] = 9; }  }
+      else
+        {
+        if (actirem[i])
+          {
+          auxerr=ReqJson(conf.idremote[i], conf.webPort); 
+          if (auxerr>=0) { parseJsonremoto();  } // pone los valores en la variable "datosremoto" y en el remoto correspondiente
+          else { timerem[i]++; if (timerem[i] >= maxerrorrem) { setactivarem(i, false); timerem[i] = 0; }   }
+          msg = vacio;
+          }
+        else { timerem[i]++; if (timerem[i] >= 1)    { setactivarem(i, true); timerem[i] = 9; }  }
+        }
       }
-    }
+      }
   return auxerr;
 }
 
@@ -600,7 +612,7 @@ void ICACHE_FLASH_ATTR onescena(byte nesc)
         if (getbit8(conf.bescenaact[nesc], i + 2) == 1)
           {
           byte auxest = getbit8(conf.bescena[nesc], i + 2);
-auxerr = pinvalR(conf.idsalremote[i], conf.webPort, conf.senalrem[i]-6, auxest);
+          auxerr = pinvalR(conf.idsalremote[i], conf.webPort, conf.senalrem[i]-6, auxest);
           if ((auxerr == 200) || (auxerr == 303) || (auxerr == (-11))) {
             setbit8(bstatremote, i, auxest);
             contaremote[i] = 0;  }
@@ -640,7 +652,6 @@ void ICACHE_FLASH_ATTR htmlNotFound()
   msg=vacio;
   printP(c(HTTP11), b);
   printP(c(t404), b);
-  printP(c(pagenotfound), crlf);
   server.send(404, textplain, msg);
   msg=vacio;
 }
@@ -710,7 +721,7 @@ void procesaeventos()
       else     // activadora sonda o analógica (0..9)
         {
         float vact;
-        if (conf.condact[i]<=7) vact = float(MbR[conf.condact[i]]/100);  // temperaturas locales
+        if (conf.condact[i]<=7) vact = float(MbR[conf.condact[i]])/100;  // temperaturas locales
         else if (conf.condact[i]<=9) vact = float(MbR[conf.condact[i]]); // entradas analógicas locales 
         //          else if (condact[i]==254)
         float tcomp = float(conf.evenvalA[i]);
@@ -855,7 +866,7 @@ void HtmlGetStateIn(byte ind)
   colorea=(getbit8(conf.MbC8,ind+8)==1);
   printP(colorea?th:td,c(resetcontp));
   printI(ind);
-  printP(comillas,mayor,readdescr(filedesclocal,ind+10,20),href_f);
+  printP(comillas,mayor,readdescr(filedesclocal,ind+8,20),href_f);
   printP(colorea?th_f:td_f);
   cell(conf.contadores[ind]);
 }
@@ -869,7 +880,7 @@ void HtmlGetStateOut(byte ind)
   printI(ind);
   printP(amper,letran,ig);
   printI(conf.iddevice);
-  printP(comilla, mayor,readdescr(filedesclocal,ind+14,20),href_f,colorea?th_f:td_f,td);
+  printP(comilla, mayor,readdescr(filedesclocal,ind+12,20),href_f,colorea?th_f:td_f,td);
   printtiempo(segundos);
   printP(td_f);
 }
@@ -1067,37 +1078,17 @@ void ICACHE_FLASH_ATTR panelHTML() {
       }
     }
 
-  for (byte i=0;i<maxDHT;i++)   // sondas DHT
-    {
-    printP(tr,td,"DHT"); printI(i); printP(td_f,td);
-    printF(dhtdata[i][0],1);
-    printP(b,celsius,b,barraesp);
-    printF(dhtdata[i][1],0);
-    printP(porcen,td_f,tr_f);
-    }
-    
-  // ENTRADAS ANALÓGICAS
-  for (byte i=0;i<maxEA;i++)
-    if (getbit8(conf.bshowbypanel[auxI], i+8))
-      {
-      printP(tr, td);
-      if (conf.showN) printparentesis(letraa, i);
-      printP(readdescr(filedesclocal, i+8, 20), td_f, td);
-      printF((MbR[baseAna+i]*conf.factorA[i]) + conf.offsetA[i], 2);
-      printP(b, conf.unitpinA[i], td_f, tr_f);
-      }
-
-  for (byte i=0; i<maxsalrem; i++) // entrada analógica remota
-    if (getbit8(conf.bshowbypanel[auxI], i+22))
-      if (conf.senalrem[i]==3)
-        {
-        printP(tr, td);
-        if (conf.showN) { printparentesis(letrar, i); printparentesis(letraR, conf.idsalremote[i]);   }
-        printP(b, readdescr(filesalrem, i, 20), td_f, td);
-        if (!actisenal[i]) printP(aster, b);
-        printF(sondaremote[i], 2);
-        printP(b,readdescr(fileunitsalrem,i,13), td_f,tr_f);
-        }
+//  for (byte i=0; i<maxsalrem; i++) // entrada analógica remota
+//    if (getbit8(conf.bshowbypanel[auxI], i+22))
+//      if (conf.senalrem[i]==3)
+//        {
+//        printP(tr, td);
+//        if (conf.showN) { printparentesis(letrar, i); printparentesis(letraR, conf.idsalremote[i]);   }
+//        printP(b, readdescr(filesalrem, i, 20), td_f, td);
+//        if (!actisenal[i]) printP(aster, b);
+//        printF(sondaremote[i], 2);
+//        printP(b,readdescr(fileunitsalrem,i,13), td_f,tr_f);
+//        }
 
   // ENTRADAS DIGITALES
   for (byte i=0; i<maxED; i++)
@@ -1141,7 +1132,7 @@ void ICACHE_FLASH_ATTR panelHTML() {
   if (conectado)
     {
     for (byte i=0;i<maxSD;i++)
-      if (getbit8(conf.bshowbypanel[auxI], i+14))
+      if (getbit8(conf.bshowbypanel[auxI], i+12))
         {
         printP(menor, PSTR("tr"), b);
         printP(c(tid), ig, comilla, letral); 
@@ -1173,7 +1164,91 @@ void ICACHE_FLASH_ATTR panelHTML() {
   serversend200();
 }
 
-void ICACHE_FLASH_ATTR indexHTML() { if (conf.modoterm==0) panelHTML(); else termostatoHTML(); }
+void ICACHE_FLASH_ATTR panelhpHTML() {
+  printremote();
+  boolean conectado = (autOK());
+  msg=vacio;
+  if (server.method()==HTTP_POST) return; 
+  writeHeader(false,true);
+  byte auxI=server.arg(0).toInt();
+  panelact=auxI;
+  writeMenu(1, auxI);
+  printP(menor, table);
+  printP(b, c(tclass), ig, tpanel, mayor, tr);
+  printColspan(2);
+  printP(readdescr(filezonas, auxI, 20), td_f, tr_f);
+
+  /////////////  CONTENIDO   ///////////
+  if (conectado)
+    {
+
+  // TEMPERATURAS DS18B20 Locales
+  for (byte i=0; i<maxTemp; i++)
+    if (getbit8(conf.bshowbypanel[auxI],i))
+      {
+      printP(menor,letrat,letrar,b);
+      printP(c(tid),ig,comilla,letrat,letrae);
+      printI(i);
+      printP(comilla,mayor);
+      HtmlGetStateTemp(i);
+      printP(tr_f);
+      }
+
+  // ENTRADAS ANALÓGICAS
+  for (byte i=0;i<maxEA;i++)
+    if (getbit8(conf.bshowbypanel[auxI], i+8))
+      {
+      printP(tr, td);
+      if (conf.showN) printparentesis(letraa, i);
+      printP(readdescr(filedesclocal, i+8, 20), td_f, td);
+      printF((MbR[baseAna+i]*conf.factorA[i]) + conf.offsetA[i], 2);
+      printP(b, conf.unitpinA[i], td_f, tr_f);
+      }
+
+  // ENTRADAS DIGITALES
+  for (byte i=0; i<maxED; i++)
+    if (getbit8(conf.bshowbypanel[auxI], i+10))
+      if (conf.tipoED[i]<=1)  // entrada digital ON/OFF o OFF/ON (puede ser DHT)
+        {
+        printP(menor, letrat, letrar, b);
+        printP(c(tid), ig, comilla, letral); 
+        printI(i);
+        printP(comilla, mayor);
+        HtmlGetStateIn(i);
+        printP(tr_f);
+        }
+    }
+
+  // SALIDAS DIGITALES
+  if (conectado)
+    {
+    for (byte i=0;i<maxSD;i++)
+      if (getbit8(conf.bshowbypanel[auxI], i+14))
+        {
+        printP(menor, PSTR("tr"), b);
+        printP(c(tid), ig, comilla, letral); 
+        printI(i+4);
+        printP(comilla, mayor);
+        HtmlGetStateOut(i);
+        printP(tr_f);
+        }
+    }
+
+  // final
+  printP(menor,letrat,letrar,b,c(tid));
+  printP(ig,comilla,letrat,letrat,comilla,mayor);
+  HtmlGetStateTime();
+  printP(tr_f, menor, barra, table, mayor);
+  printP(c(body_f), menor, barra,thtml, mayor);
+  serversend200();
+}
+
+void ICACHE_FLASH_ATTR indexHTML() 
+  {
+  if (conf.modohp==1) panelhpHTML(); 
+  else if (conf.modoterm==0) panelHTML(); 
+  else termostatoHTML(); 
+  }
 
 void ICACHE_FLASH_ATTR AddOri(byte numori)
 {
@@ -1420,9 +1495,9 @@ void ICACHE_FLASH_ATTR setupremHTML()
   mp=5; // número de parámetros por fila
   if (server.method()==HTTP_POST)
     {
-    for (byte i=0; i<maxdevrem; i++)
-      { strcpy(auxdesc, vacio); savedescr(fileidmyjsonrem, auxdesc, i, 10);
-        strcpy(auxdesc, vacio); savedescr(filemacdevrem, auxdesc, i, 14);      }
+//    for (byte i=0; i<maxdevrem; i++)
+//      { strcpy(auxdesc, vacio); savedescr(fileidmyjsonrem, auxdesc, i, 10);
+//        strcpy(auxdesc, vacio); savedescr(filemacdevrem, auxdesc, i, 14);      }
     for (int i=0; i<server.args(); i++)
       {
       calcindices(i);
@@ -1432,7 +1507,7 @@ void ICACHE_FLASH_ATTR setupremHTML()
       }
     actualizaremotos();    // modo directo
     saveconf();
-    //    initPRG();    // inicializa programaciones
+//    //    initPRG();    // inicializa programaciones
     sendOther(slkhtm,-1);
     return;
     }
@@ -1594,7 +1669,6 @@ void ICACHE_FLASH_ATTR setupsalremHTML()
   printP(tr_f);
   for (byte i=0; i<32; i++)
     {
-//    colorea=(i==posactsalrem);
     colorea=(conf.idsalremote[i]!=0);
     mpi=mp*i;
     printP(tr, td);
@@ -1695,83 +1769,125 @@ void ICACHE_FLASH_ATTR setupioHTML()
   printremote();
   if (!autOK()) { sendOther(loghtm,-1); return; }
   msg=vacio;
-  mp=9;  // número de parámetros por fila
+  mp=21;  // número de parámetros por fila
   if (server.method()==HTTP_POST)
     {
-    if ((posactio>=10) && (posactio<=13)) { setbit8(conf.iftttpinED, posactio-10,0); setbit8(conf.iftttpinED, posactio-2,0); }
-    if ((posactio>=14) && (posactio<=21)) { setbit8(conf.iftttpinSD, posactio-14,0); setbit8(conf.iftttpinSD, posactio-6,0); }
+    if ((posactio>=8) && (posactio<=11)) { setbit8(conf.iftttpinED, posactio-8,0); setbit8(conf.iftttpinED, posactio,0); }
+    if ((posactio>=12) && (posactio<=19)) { setbit8(conf.iftttpinSD, posactio-12,0); setbit8(conf.iftttpinSD, posactio-4,0); }
     setbit8(conf.mqttsalenable,posactio,0);
+    setbit8(conf.mqttgpioenable,posactio-20,0);
+    
+    conf.TX433enabled=0; conf.RX433enabled=0; conf.SPIenabled=0;  conf.I2Cenabled=0; 
+    conf.ngpio[0]=26;
     for (int i=0  ;i<server.args(); i++)
       {
       calcindices(i);
-      if (resto==6) { setbit8(conf.mqttsalenable,indice,1); }
-      if (resto==7) { conf.tempmqtt[indice]=server.arg(i).toInt(); }
+      Serial.print("posactio:"); Serial.print(posactio);
+      Serial.print("  param:"); Serial.print(param_number);
+      Serial.print(" ind::"); Serial.print(indice);
+      Serial.print(" resto:"); Serial.print(resto);
+      Serial.print(" valor:"); Serial.println(server.arg(i));
       if (indice<=7)  // temperaturas
         {
         if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedesclocal,auxdesc,indice,20); }
-        else if (resto==1) conf.setpoint[indice]=server.arg(i).toFloat();  // valor consigna
-        else if (resto==2) conf.salsetpoint[indice]=server.arg(i).toInt(); // salida asociada
-        else if (resto==3) conf.accsetpoint[indice]=server.arg(i).toInt(); // acción consigna
-        else if (resto==8) conf.ngpio[indice]=listgpio[server.arg(i).toInt()];       // gpio
+        else if (resto==1) { setbit8(conf.mqttsalenable,indice,1); }
+        else if (resto==2) { conf.setpoint[indice]=server.arg(i).toFloat();  }  // valor consigna
+        else if (resto==3) { conf.salsetpoint[indice]=server.arg(i).toInt(); }  // salida asociada
+        else if (resto==4) { conf.accsetpoint[indice]=server.arg(i).toInt(); }  // acción consigna
         }
-      else if ((indice>=8) && (indice<=9)) // entradas analógicas
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc,20); savedescr(filedesclocal, auxdesc, indice, 20); }
-        else if (resto==1) { server.arg(i).toCharArray(conf.unitpinA[indice-8],4); } // unidades
-        else if (resto==2) conf.factorA[indice-8] = server.arg(i).toFloat();
-        else if (resto==3) conf.offsetA[indice-8] = server.arg(i).toFloat();
-        else if (resto==4) setbit8(conf.bsumatA, indice-8, 1); // Mostrar si/no suma
-        else if (resto==8) conf.ngpio[indice]=listgpio[server.arg(i).toInt()];       // gpio
-        else if (resto==8) conf.ngpio[indice]=listgpio[server.arg(i).toInt()];       // gpio
-        }
-      else if ((indice>=10) && (indice<=13)) // entradas digitales
+      else if ((indice>=8) && (indice<=11)) // entradas digitales
         {
         if (resto==0) { server.arg(i).toCharArray(auxdesc,20); savedescr(filedesclocal, auxdesc,indice,20); }
-        else if (resto==1) conf.tipoED[indice-10] = server.arg(i).toInt();
-        else if (resto==4) setbit8(conf.iftttpinED, indice-10, server.arg(i).toInt()); // Notificar si/no
-        else if (resto==5) setbit8(conf.iftttpinED, indice-2, server.arg(i).toInt()); // Notificar si/no
-        else if (resto==8) conf.ngpio[indice]=listgpio[server.arg(i).toInt()];       // gpio
+        else if (resto==1) { setbit8(conf.mqttsalenable,indice,1); }
+        else if (resto==5) { conf.tipoED[indice-10] = server.arg(i).toInt(); }  
+        else if (resto==6) { setbit8(conf.iftttpinED, indice-8, server.arg(i).toInt()); }   // Notificar si/no
+        else if (resto==7) { setbit8(conf.iftttpinED, indice-0, server.arg(i).toInt()); }  // Notificar si/no
         }
-      else if ((indice>=14) && (indice<=21)) // salidas digitales
+      else if ((indice>=12) && (indice<=19)) // salidas digitales
         {
         if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedesclocal, auxdesc, indice, 20); }
-        else if (resto==1) conf.valinic[indice-14] = server.arg(i).toInt();            // valor inicial
-        else if (resto==2) conf.tempdefact[indice-14] = server.arg(i).toInt();         // Seg. ON
-        else if (resto==3) conf.tempdefdes[indice-14] = server.arg(i).toInt();         // Seg. OFF
-        else if (resto==4) setbit8(conf.iftttpinSD, indice-14, server.arg(i).toInt()); // Notificar si/no
-        else if (resto==5) setbit8(conf.iftttpinSD, indice-6, server.arg(i).toInt());  // Notificar si/no
-        else if (resto==8) conf.ngpio[indice]=listgpio[server.arg(i).toInt()];         // gpio
+        else if (resto==1) { setbit8(conf.mqttsalenable,indice,1); }
+        else if (resto==6) { setbit8(conf.iftttpinSD, indice-12, server.arg(i).toInt());  }   // Notificar si/no
+        else if (resto==7) { setbit8(conf.iftttpinSD, indice-4, server.arg(i).toInt());  }    // Notificar si/no
+        else if (resto==8) { conf.valinic[indice-12] = server.arg(i).toInt();  }              // valor inicial
+        else if (resto==9) { conf.tempdefact[indice-12] = server.arg(i).toInt();  }           // Seg. ON
+        else if (resto==10) { conf.tempdefdes[indice-12] = server.arg(i).toInt();  }          // Seg. OFF
         }
-      else if ((indice>=22) && (indice<=23)) // DHTs
+      else if (indice==20) // TX433
         {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedesclocal, auxdesc, indice, 20); }
-        else if (resto==8) conf.ngpio[indice]=listgpio[server.arg(i).toInt()];         // gpio
+        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-20,20); }
+        if (resto==1) { setbit8(conf.mqttgpioenable,indice-20,1); }
+        if (resto==11) { conf.TX433enabled=1; }
+        if (resto==18) { conf.gpioalfa[indice-20]=server.arg(i).toInt(); }
+        if (resto==19) { conf.gpiobeta[indice-20]=server.arg(i).toInt(); }
+        if (resto==20) { conf.gpiogamma[indice-20]=server.arg(i).toInt(); }
         }
+      else if (indice==21) // RX433
+        {
+        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-20,20); }
+        if (resto==1) { setbit8(conf.mqttgpioenable,indice-20,1); }
+        if (resto==12) { conf.RX433enabled=1; }
+        if (resto==18) { conf.gpioalfa[indice-20]=server.arg(i).toInt(); }
+        if (resto==19) { conf.gpiobeta[indice-20]=server.arg(i).toInt(); }
+        if (resto==20) { conf.gpiogamma[indice-20]=server.arg(i).toInt(); }
         }
+      else if (indice==22) // SPI
+        {
+        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-20,20); }
+        if (resto==1) { setbit8(conf.mqttgpioenable,indice-20,1); }
+        if (resto==13) { conf.SPIenabled=1; }
+        if (resto==18) { conf.gpioalfa[indice-20]=server.arg(i).toInt(); }
+        if (resto==19) { conf.gpiobeta[indice-20]=server.arg(i).toInt(); }
+        if (resto==20) { conf.gpiogamma[indice-20]=server.arg(i).toInt(); }
+        }
+      else if (indice==26) // I2C
+        {
+        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-20,20); }
+        if (resto==1) { setbit8(conf.mqttgpioenable,indice-20,1); }
+        if (resto==14) { conf.I2Cenabled=1; 
+                         for (byte k=0; k<maxpaneles;k++) { setbit8(conf.bshowbypanel[k],14,0); setbit8(conf.bshowbypanel[k],15,0);} }
+        if (resto==18) { conf.gpioalfa[indice-20]=server.arg(i).toInt(); }
+        if (resto==19) { conf.gpiobeta[indice-20]=server.arg(i).toInt(); }
+        if (resto==20) { conf.gpiogamma[indice-20]=server.arg(i).toInt(); }
+        }
+      else  // resto GPIOS
+        {
+        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-20,20); }
+        if (resto==1) { setbit8(conf.mqttgpioenable,indice-20,1); }
+        if (resto==18) { conf.gpioalfa[indice-20]=server.arg(i).toInt(); }
+        if (resto==19) { conf.gpiobeta[indice-20]=server.arg(i).toInt(); }
+        if (resto==20) { conf.gpiogamma[indice-20]=server.arg(i).toInt(); }
+        }
+      }
     if (conf.modoterm==1) { conf.tempdefact[0]=0; conf.tempdefdes[0]=0;  }
     saveconf();
+    posactio++; if (posactio>22+maxgpiovar) posactio=0;
     sendOther(siohtm,-1); return;
     }
-  if (server.args() > 0) { posactio = constrain(server.arg(0).toInt(),0,23); }
+  if (server.args() > 0) 
+    { 
+    saveconf();
+    posactio = constrain(server.arg(0).toInt(),0,22+maxgpiovar); 
+    }
   writeHeader(false,false);
   writeMenu(3,1);
   writeForm(siohtm);
-
   printP(tr);
+  printColspan(2);
   tcell(descripcion); 
   ccell(gpio);
-  printColspan(2);
-  printP(c(mqtt),td_f);
+  printP(td,c(mqtt),td_f);
+  printP(td,ID,td_f);
   tcell(consigna);
   tcell(salida);
-  printColspan(2); 
-  printP(ONOFF,td_f,tr_f);
-  for (byte i=0; i<24; i++)
+  printP(td,ONOFF,td_f,tr_f);
+  for (byte i=0; i<20+maxgpiovar; i++)
     {
-    printP(tr);
     mpi=mp*i;
     if (i<=7) // Sondas temperatura
       {
+      printP(tr);
+      printColspan(2);  
       if (posactio==i)
         {
         printP(td, menor, c(tinput), b, type, ig);
@@ -1785,37 +1901,15 @@ void ICACHE_FLASH_ATTR setupioHTML()
         printI(19);
         printP(comillas, mayor, menor, barra, c(tinput), mayor);
         printP(td_f);
-
-        if (i==0)
-          {
-          printP(td);
-          printP(c(Select_name),comillas);
-          printI(mpi+8);
-          printP(comillas, mayor);      // GPIO
-          for (byte j=0; j<27; j++)   { // gpios
-            pc(optionvalue);
-            printPiP(comillas, j, comillas);
-            if (conf.ngpio[0]==listgpio[j]) printP(b, selected, ig, comillas, selected, comillas);
-            printP(mayor);
-            printI(listgpio[j]);
-            pc(option_f);
-            }
-          }
-        else
-          cell(conf.ngpio[0]);
+        cell(conf.ngpio[0]);
         pc(select_f);
-        printP(td_f);
-
-        checkBox(mpi+6,(getbit8(conf.mqttsalenable,i)),true);
-        printcampoI(mpi+7,conf.tempmqtt[i],5,true,true);
-
+        checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
         printP(td);
-        printcampoF(mpi+1, conf.setpoint[i], 1); // valor de consigna
-        printP(td_f);
-
-        printP(td);
-        printP(c(Select_name),comillas);
-        printI(mpi+2);
+        for (uint8_t j=0; j<8; j++) { if (addr1Wire[i][j]<16) printP(cero); printH(addr1Wire[i][j]); }
+        printP(td_f,td);
+        printcampoF(mpi+2, conf.setpoint[i], 1); // valor de consigna
+        printP(td_f,td,c(Select_name),comillas);
+        printI(mpi+3);
         printP(comillas, mayor);       // señal de salida
         for (byte j=0; j<maxSD; j++)   { // salidas digitales locales
           pc(optionvalue);
@@ -1826,11 +1920,8 @@ void ICACHE_FLASH_ATTR setupioHTML()
           pc(option_f);
           }
         pc(select_f);
-        printP(td_f);
-        
-        printColspan(2);
-        printP(c(Select_name),comillas);
-        printIP(mpi+3, comillas);
+        printP(td_f,td,c(Select_name),comillas);
+        printIP(mpi+4, comillas);
         printP(mayor);
         for (byte k=0; k<3; k++) {
           pc(optionvalue);
@@ -1847,92 +1938,24 @@ void ICACHE_FLASH_ATTR setupioHTML()
         printOpc(false, false, auxdesc);
         cell(conf.ngpio[0]);
         cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-        cell(conf.tempmqtt[i]);
+        printP(td); for (uint8_t j=0; j<8; j++) { if (addr1Wire[i][j]<16) printP(cero); printH(addr1Wire[i][j]); } printP(td_f);
         cell(conf.setpoint[i],2);
         printP(td); 
         printP(readdescr(filedesclocal,conf.salsetpoint[i]+14,20));  
         printP(td_f);
-        printColspan(2);
-        printP(conf.accsetpoint[i]==0?OFF:conf.accsetpoint[i]==1?ON:guion,td_f);
+        printP(td,conf.accsetpoint[i]==0?OFF:conf.accsetpoint[i]==1?ON:guion,td_f);
         }
       printP(tr_f);
       }
-    if ((i>=8) && (i<=9)) // entradas analógicas
+    if ((i>=8) && (i<=11))    // entradas digitales
       {
-      if (i==8) { printP(tr); printColspan(4); tcell(units); ccell(factor); ccell(toffset); cell(symsum); printP(tr_f);  }
-      if (posactio==i)
-        {
-        printP(td, menor, c(tinput), b, type, ig);
-        printP(comillas, c(ttext), comillas, b);
-        printP(c(namet), ig);
-        printPiP(comillas, mpi, comillas);
-        printP(b, tvalue, ig, comillas);
-        printP(readdescr(filedesclocal, i, 20));
-        printP(comillas,b,c(max_length));
-        printIP(19, size_i);
-        printI(19);
-        printP(comillas, mayor, menor, barra, c(tinput), mayor);
-        printP(td_f);
-
-        printP(td);
-        printP(c(Select_name),comillas);
-        printI(mpi+8);
-        printP(comillas, mayor);      // GPIO
-        for (byte j=0; j<27; j++)   { // gpios
-          pc(optionvalue);
-          printPiP(comillas, j, comillas);
-          if (conf.ngpio[i]==listgpio[j]) printP(b, selected, ig, comillas, selected, comillas);
-          printP(mayor);
-          printI(listgpio[j]);
-          pc(option_f);
-          }
-        pc(select_f);
-        printP(td_f);
-
-        checkBox(mpi+6,(getbit8(conf.mqttsalenable,i)),true);
-        
-        printcampoI(mpi+7,conf.tempmqtt[i],5,true,true);
-
-        printP(td,menor, c(tinput), b, type, ig);
-        printP(comillas, c(ttext), comillas, b);
-        printP(c(namet), ig);
-        printPiP(comillas, mpi+1, comillas);
-        printP(b, tvalue, ig, comillas, conf.unitpinA[i-8]);
-        printP(comillas,b,c(max_length));
-        printIP(3, size_i);
-        printI(3);
-        printP(comillas, mayor, menor, barra, c(tinput), mayor);
-        printP(td_f, td, c(factor), b);
-  
-        printcampoF(mpi+2, conf.factorA[i-8],5);
-        printP(td_f,td);
-        printcampoF(mpi+3, conf.offsetA[i-8],5);
-        colorea=getbit8(conf.bsumatA,0);
-        printP(td_f);
-        checkBox(mpi+4,(getbit8(conf.bsumatA,0)),true);
+      if (i==8)  
+        { 
+        espacioSep(9);
+        printP(tr); printColspan(5); tcell(ttipo); printColspan(2); printP(td_f); ccell(ifttt); printP(tr_f); 
         }
-      else
-        {
-        readdescr(filedesclocal,i,20);
-        strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
-        printOpc(false, false, auxdesc);
-        cell(conf.ngpio[i]);
-
-        cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-        cell(conf.tempmqtt[i]);
-        
-        cell(conf.unitpinA[i-8]);
-        printP(td);
-        printF(conf.factorA[i-8], 5);
-        printP(td_f, td);
-        printF(conf.offsetA[i-8], 5);
-        printP(td_f, td, getbit8(conf.bsumatA,i-8)?symyes:symnot,td_f);
-        }
-      printP(tr_f);
-      }
-    if ((i>=10) && (i<=13))    // entradas digitales
-      {
-      if (i==10)  { printP(tr); printColspan(4); tcell(ttipo); printColspan(2); printP(td_f); ccell(ifttt); printP(tr_f); }
+      printP(tr);
+      printColspan(2);
       if (posactio==i) 
         {
         printP(td, menor, c(tinput), b, type, ig);
@@ -1947,156 +1970,165 @@ void ICACHE_FLASH_ATTR setupioHTML()
         printI(19);
         printP(comillas, mayor, menor, barra, c(tinput), mayor);
         printP(td_f);
-
-        printP(td);
-        printP(c(Select_name),comillas);
-        printI(mpi+8);
-        printP(comillas, mayor);      // GPIO
-        for (byte j=0; j<27; j++)   { // gpios
-          pc(optionvalue);
-          printPiP(comillas, j, comillas);
-          if (conf.ngpio[i]==listgpio[j]) printP(b, selected, ig, comillas, selected, comillas);
-          printP(mayor);
-          printI(listgpio[j]);
-          pc(option_f);
-          }
-        pc(select_f);
-        printP(td_f);
-
-        checkBox(mpi+6,(getbit8(conf.mqttsalenable,i)),true);
-        printcampoI(mpi+7,conf.tempmqtt[i],5,true,true);
-      
-        printcampoCB(mpi+1, conf.tipoED[i-10], ONOFF, OFFON, dhtt,true);
+        cell(edPin[i-8]);
+        checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
+        printcampoCB(mpi+5, conf.tipoED[i-8], ONOFF, OFFON, dhtt,true);
         printColspan(2);
         printP(td);
-        checkBox(mpi+4, getbit8(conf.iftttpinED, i-10),false); // checkbox Notificar ON
+        checkBox(mpi+6, getbit8(conf.iftttpinED, i-8),false); // checkbox Notificar ON
         printP(barra);
-        checkBox(mpi+5, getbit8(conf.iftttpinED, i-2),false); // checkbox Notificar OFF
+        checkBox(mpi+7, getbit8(conf.iftttpinED, i),false); // checkbox Notificar OFF
         }
       else
         {
         readdescr(filedesclocal,i,20);
         strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
         printOpc(false, false, auxdesc);
-        cell(conf.ngpio[i]);
-
+        cell(edPin[i-8]);
         cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-        cell(conf.tempmqtt[i]);
-      
-        cell(conf.tipoED[i-10]==0?ONOFF:conf.tipoED[i-10]==1?OFFON:dhtt);
+        cell(conf.tipoED[i-8]==0?ONOFF:conf.tipoED[i-8]==1?OFFON:dhtt);
         printColspan(2);
-        printP(td, getbit8(conf.iftttpinED,i-10)?symyes:symnot);
-        printP(barra, getbit8(conf.iftttpinED,i-2)?symyes:symnot);
+        printP(td, getbit8(conf.iftttpinED,i-8)?symyes:symnot);
+        printP(barra, getbit8(conf.iftttpinED,i)?symyes:symnot);
         }
-      printP(td_f,tr_f);
+      printP(td_f);
+      printP(tr_f);
       }
-   if ((i>=14) && (i<=21))    // salidas digitales
+   if ((i>=12) && (i<=19))    // salidas digitales
+     {
+     printP(tr);
+     if (i==12) { espacioSep(9);  printP(tr); printColspan(5); ccell(defaultt); ccell(tdefact); ccell(tdefdes); ccell(ifttt); printP(tr_f); }
+     printColspan(2);
+     if (posactio==i) 
+       {
+       printP(td, menor, c(tinput), b, type, ig);
+       printP(comillas, c(ttext), comillas, b);
+       printP(c(namet), ig);
+       printPiP(comillas, mpi, comillas);
+       printP(b, tvalue, ig, comillas);
+       printP(readdescr(filedesclocal, i, 20));
+       printP(comillas,b,c(max_length));
+       printIP(19, size_i);
+       printI(19);
+       printP(comillas, mayor, menor, barra, c(tinput), mayor);
+       printP(td_f);
+       cell(sdPin[i-12]);
+
+       if (((i==14) || (i==15)) && (conf.I2Cenabled==1))
+         {
+         printP(td,readdescr(filedesclocal,i,20),td_f); printColspan(6); printP("No available");printP(td_f);
+         }
+       else
+         {
+         checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
+         printcampoCB(mpi+8, conf.valinic[i-12], OFF, ON, ultimovalor,true);
+         printcampoL(mpi+9, conf.tempdefact[i-12], 8, true,true);
+         printcampoL(mpi+10, conf.tempdefdes[i-12], 8, true,true);
+         printP(td);
+         checkBox(mpi+6, getbit8(conf.iftttpinSD, i-12),false); // checkbox Notificar ON
+         printP(barra);
+         checkBox(mpi+7, getbit8(conf.iftttpinSD, i-4),false); // checkbox Notificar 
+         }
+       }
+     else
+       {
+       readdescr(filedesclocal,i,20);
+       strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
+       printOpc(false, false, auxdesc);
+       cell(sdPin[i-12]);
+ 
+       if (((i==14) || (i==15)) && (conf.I2Cenabled==1))
+         {
+         printColspan(5); printP("No available");printP(td_f);
+         }
+       else
+         {
+         cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
+         cell(conf.valinic[i-12]==0?OFF : conf.valinic[i-12] == 1 ? ON : ultimovalor);
+         cell(conf.tempdefact[i-12]);
+         cell(conf.tempdefdes[i-12]);
+         printP(td,getbit8(conf.iftttpinSD,i-12)?symyes:symnot, barra,getbit8(conf.iftttpinSD,i-4)?symyes:symnot);
+         }
+       }
+     printP(td_f);
+     printP(tr_f);
+     }
+    if (i>=20)    // GPIOs configurables
       {
-      if (i==14) { printP(tr); printColspan(4); ccell(defaultt); ccell(tdefact); ccell(tdefdes); ccell(ifttt); printP(tr_f); }
-      if (posactio==i) 
+      if (i==20) { espacioSep(9); }
+      if (i==20)
+        {
+        printP(tr);
+        printColspan(6); printP("GPIOS configurables", td_f);
+        printP(td,letraa,td_f,td,letrab,td_f); printP(td,letrac,td_f,tr_f);   
+        printP(tr,td,"TX433 (2)",td_f);  checkBox(mpi+11,conf.TX433enabled,true);  
+        }
+      else if (i==21) { printP(tr, td,"RX433 (4)",td_f); checkBox(mpi+12,conf.RX433enabled,true);  }
+      else if (i==22) { printP(tr, td,"SPI-MISO (12)",td_f); checkBox(mpi+13,conf.SPIenabled,true); } 
+      else if (i==26) { printP(tr, td,"I2C-SCA (21)",td_f); checkBox(mpi+14,conf.I2Cenabled,true); }  
+      else  { printP(tr, td,td_f,td,td_f);  }
+      if (posactio==i)
         {
         printP(td, menor, c(tinput), b, type, ig);
         printP(comillas, c(ttext), comillas, b);
         printP(c(namet), ig);
         printPiP(comillas, mpi, comillas);
         printP(b, tvalue, ig, comillas);
-        printP(readdescr(filedesclocal, i, 20));
+        printP(readdescr(filedescgpio,i-20,20));
         printP(comillas,b,c(max_length));
         printIP(19, size_i);
         printI(19);
         printP(comillas, mayor, menor, barra, c(tinput), mayor);
         printP(td_f);
-
-        printP(td);
-        printP(c(Select_name),comillas);
-        printI(mpi+8);
-        printP(comillas, mayor);      // GPIO
-        for (byte j=0; j<27; j++)   { // gpios
-          pc(optionvalue);
-          printPiP(comillas, j, comillas);
-          if (conf.ngpio[i]==listgpio[j]) printP(b, selected, ig, comillas, selected, comillas);
+        printPiP(td,listgpiovar[i-20],td_f);
+        if (((i==20) && (conf.TX433enabled==0)) || ((i==21) && (conf.RX433enabled==0)) ||
+            ((i==22) && (conf.SPIenabled==0)) || ((i==23) && (conf.SPIenabled==0)) ||
+            ((i==24) && (conf.SPIenabled==0)) || ((i==25) && (conf.SPIenabled==0)) ||
+            ((i==26) && (conf.I2Cenabled==0)) || ((i==27) && (conf.I2Cenabled==0)) ||
+            (i==28) || (i==29) || (i==30) || (i==31) )
+          {
+          checkBox(mpi+1,(getbit8(conf.mqttgpioenable,i-20)),true);
+          printP(td,c(Select_name),comillas);
+          printIP(mpi+17, comillas);
           printP(mayor);
-          printI(listgpio[j]);
-          pc(option_f);
+          for (byte k=0; k<maxsensortype; k++) {
+            pc(optionvalue);
+            printPiP(comillas, k, comillas);
+            if (k==conf.gpiosensortype[i]) printP(b, selected, ig, comillas, selected, comillas);
+            printP(mayor, sensortype[k],c(option_f));
+            }
+          pc(select_f);
+          printP(td_f);
+          printcampoL(mpi+18, conf.gpioalfa[i], 5, true,true);  
+          printcampoL(mpi+19, conf.gpiobeta[i], 5, true,true);  
+          printcampoL(mpi+20, conf.gpiogamma[i], 5, true,true);  
           }
-        pc(select_f);
-        printP(td_f);
-  
-        checkBox(mpi+6,(getbit8(conf.mqttsalenable,i)),true);
-        printcampoI(mpi+7,conf.tempmqtt[i],5,true,true);
-        
-        printcampoCB(mpi+1, conf.valinic[i-14], OFF, ON, ultimovalor,true);
-        printcampoL(mpi+2, conf.tempdefact[i-14], 8, true,true);
-        printcampoL(mpi+3, conf.tempdefdes[i-14], 8, true,true);
-        printP(td);
-        checkBox(mpi+4, getbit8(conf.iftttpinSD, i-14),false); // checkbox Notificar ON
-        printP(barra);
-        checkBox(mpi+5, getbit8(conf.iftttpinSD, i-6 + 8),false); // checkbox Notificar OFF
+        else
+          { printColspan(5); printP("No available",td_f); }
         }
       else
         {
-        readdescr(filedesclocal,i,20);
+        readdescr(filedescgpio,i-20,20);
         strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
         printOpc(false, false, auxdesc);
-        cell(conf.ngpio[i]);
-  
-        cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-        cell(conf.tempmqtt[i]);
-        
-        cell(conf.valinic[i-14]==0?OFF : conf.valinic[i-14] == 1 ? ON : ultimovalor);
-        cell(conf.tempdefact[i-14]);
-        cell(conf.tempdefdes[i-14]);
-        printP(td,getbit8(conf.iftttpinSD,i-14)?symyes:symnot, barra,getbit8(conf.iftttpinSD,i-6)?symyes:symnot);
-        }
-      printP(td_f,tr_f);
-      }
-   if ((i>=22) && (i<=23))    // señales DHT
-      {
-      if (i==22) { printP(tr); printColspan(8); printP(tr_f); }
-      if (posactio==i) 
-        {
-        printP(td, menor, c(tinput), b, type, ig);
-        printP(comillas, c(ttext), comillas, b);
-        printP(c(namet), ig);
-        printPiP(comillas, mpi, comillas);
-        printP(b, tvalue, ig, comillas);
-        printP(readdescr(filedesclocal, i, 20));
-        printP(comillas,b,c(max_length));
-        printIP(19, size_i);
-        printI(19);
-        printP(comillas, mayor, menor, barra, c(tinput), mayor);
-        printP(td_f);
-
-        printP(td);
-        printP(c(Select_name),comillas);
-        printI(mpi+8);
-        printP(comillas, mayor);      // GPIO
-        for (byte j=0; j<27; j++)   { // gpios
-          pc(optionvalue);
-          printPiP(comillas, j, comillas);
-          if (conf.ngpio[i]==listgpio[j]) printP(b, selected, ig, comillas, selected, comillas);
-          printP(mayor);
-          printI(listgpio[j]);
-          pc(option_f);
+        printPiP(td,listgpiovar[i-20],td_f);
+        if (((i==20) && (conf.TX433enabled==0)) || ((i==21) && (conf.RX433enabled==0)) ||
+            ((i==22) && (conf.SPIenabled==0)) || ((i==23) && (conf.SPIenabled==0)) ||
+            ((i==24) && (conf.SPIenabled==0)) || ((i==25) && (conf.SPIenabled==0)) ||
+            ((i==26) && (conf.I2Cenabled==0)) || ((i==27) && (conf.I2Cenabled==0)) ||
+            (i==28) || (i==29) || (i==30) || (i==31) )
+          {
+          cell(getbit8(conf.mqttgpioenable,i-20)?symyes:symnot);
+          printP(td,sensortype[conf.gpiosensortype[i-20]],td_f);
+          printPiP(td,conf.gpioalfa[i-20],td_f);
+          printPiP(td,conf.gpiobeta[i-20],td_f);
+          printPiP(td,conf.gpiogamma[i-20],td_f);
           }
-        pc(select_f);
-        printP(td_f);
-        checkBox(mpi+6,(getbit8(conf.mqttsalenable,i)),true);
-        printcampoI(mpi+7,conf.tempmqtt[i],5,true,true);
-        printColspan(4);
+        else
+          { printColspan(5); printP("No available",td_f); }
         }
-      else
-        {
-        readdescr(filedesclocal,i,20);
-        strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
-        printOpc(false, false, auxdesc);
-        cell(conf.ngpio[i]);
-        cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-        cell(conf.tempmqtt[i]);
-        printColspan(4);
-        }
-      printP(td_f,tr_f);
       }
+    printP(tr_f);
     }
   writeFooter(guardar, false);
   serversend200();
@@ -2153,14 +2185,11 @@ void ICACHE_FLASH_ATTR setupDevHTML()
   printcampoCB(0, conf.iddevice, 150, 166,true);
   printP(tr_f);
   
-  printP(tr, td, t(Modo),b);
-  pt(pines);
-  printP(b,cuatro, guion, cinco, td_f);
-  printP(td,td_f);
+  printP(tr);  
   tcell(mostrarpines);
   printP(conf.showN?th:td);
   checkBox(1, conf.showN,false);
-  printP(conf.showN?th_f:td_f, tr_f);
+  printP(conf.showN?th_f:td_f,td,td_f,td,td_f,tr_f);
 
   printP(tr,td,t(Act));
   pt(aut);
@@ -2198,14 +2227,10 @@ void ICACHE_FLASH_ATTR setupDevHTML()
   printcampoF(15, conf.latitud, 6);  printP(td_f, td);
   printcampoF(16, conf.longitud, 6);  printP(td_f, td, td_f, tr_f);
 
-  printP(tr, td, PSTR("Idioma"),td_f);
+  printP(tr, td, t(idioma),td_f);
   printcampoCB(20, conf.lang, PSTR("Español"), PSTR("English"),true); 
-  printColspan(2);
-  printP(td_f,tr_f);
-
-  printP(tr, td, PSTR("Modo"),td_f);
+  printP(td_f,td, t(Modo),td_f);
   printcampoCB(21, conf.modohp, PSTR("Normal"), PSTR("Bomba de calor"),true); 
-  printColspan(2);
   printP(td_f,tr_f);
 
   writeFooter(guardar, false);
@@ -2300,22 +2325,13 @@ void ICACHE_FLASH_ATTR setupbyPanelHTML()
   printP(menor,table, b);
   printP(c(tclass), ig, tnormal, mayor);
 
-  printP(tr);
-  printColspan(7);
-  printP(t(zona),dp);
-  printP(readdescr(filezonas, auxI, 20), td_f, tr_f);
+  printP(tr); printColspan(7); printP(t(zona),dp); printP(readdescr(filezonas, auxI, 20), td_f, tr_f);
+  printP(tr); printColspan(3); printP("Locales"); printP(td_f,td,td_f);
+  printColspan(3); printP("Remotas"); printP(td_f,tr_f);
 
-  printP(tr);
-  printColspan(3);
-  printP("Locales");
-  printP(td_f,td,td_f);
-  
-  printColspan(3);
-  printP("Remotas");
-  printP(td_f,tr_f);
   for (byte i=0; i<maxsalrem; i++)  {
     mpi=mp*i;
-    if (i<22)
+    if (i<22)   // señales locales
       {
       colorea=(getbit8(conf.bshowbypanel[auxI], i));
       printP(tr,td,letraL);
@@ -2326,10 +2342,21 @@ void ICACHE_FLASH_ATTR setupbyPanelHTML()
       checkBox(mpi, colorea,false);
       printP(colorea?th_f:td_f);
       }
+    else if (i<24)    // 2 señales DHT
+      {
+      colorea=(getbit8(conf.bshowbypanel[auxI], i+32));
+      printP(tr,td,letraD,letraH,letraT);
+      printI(i-22);
+      printP(td_f, colorea?th:td);
+      printP(readdescr(filedesclocal, i, 20));
+      printP(colorea?th_f:td_f, colorea?th:td);
+      checkBox(mpi+32, colorea,false);
+      printP(colorea?th_f:td_f);
+      }
     else
       printColspan(3);
     printP(td,td_f);
-      
+        // señales remotas
     colorea=(getbit8(conf.bshowbypanel[auxI], i+22));
     printP(td,letraR);
     printI(i);
@@ -2389,8 +2416,8 @@ void ICACHE_FLASH_ATTR setupNetServHTML()
   printP(tr);
   tcell(ftpserver);
   checkBox(1, conf.ftpenable,true);
-  pc(td_if);
-  printP(c(td_if),tr_f);
+  printColspan(2);
+  printP(tr_f);
 
   printP(tr, td, href_i, comillas);
   pc(thttps);
@@ -3678,8 +3705,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   printP(tr, td, td_f);
   printP(td, t(asociara), b);
   printP(t(programa), td_f);
-  printColspan(2);  printP(t(senal), b);
-  tcell(activadora);
+  printColspan(2);  printP(t(senal), b); printP(t(activadora),td_f);
   printColspan(3);  printP(t(ana), td_f);
   printColspan(2);  
   printP(t(senal), b);
@@ -4278,7 +4304,7 @@ void ICACHE_FLASH_ATTR initFab(void)
 {
   dPrint(t(reiniciando)); dPrint(b); dPrint(t(fabrica)); dPrint(crlf);
   initConf();                  // variables de estructura Conf
-  resetWiFi();                  // WiFi y Red
+  resetWiFi();                 // WiFi y Red
   initPRG();                   // PROGRAMAS
   saveconf();
 }
@@ -4525,9 +4551,13 @@ void ICACHE_FLASH_ATTR check_if_exist_I2C() {
 
 void ICACHE_FLASH_ATTR lcdshowstatus()
 {
-  lcd.clear();
-  for (byte i=0;i<2;i++) { lcd.setCursor(i*6,0); lcd.print(MbR[i]*0.01,1); lcd.print(letrac); }
-  for (byte i=0;i<3;i++) { lcd.setCursor(i*4,1); lcd.print(getbit8(conf.MbC8,i)==1?ON:OFF); lcd.print(b); }
+  if (conf.I2Cenabled==1)
+    {
+    lcd.clear();
+    for (byte i=0;i<3;i++) { lcd.setCursor(i*6,0); lcd.print(MbR[i]*0.01,1); lcd.print(letrac); }
+    for (byte i=0;i<2;i++) { lcd.setCursor(i*4,1); lcd.print(getbit8(conf.MbC8,i)==1?ON:OFF); lcd.print(b); }
+    for (byte i=2;i<4;i++) { lcd.setCursor(i*4,1); lcd.print(getbit8(conf.MbC8,i+2)==1?ON:OFF); lcd.print(b); }
+    }
 }
 
 void ICACHE_FLASH_ATTR lcdshowconf(boolean editing)
