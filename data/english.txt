@@ -102,7 +102,7 @@ WiFi mode
 Zone                                    
 Zones                                   
 FTP server                              
-Instalation                             
+Installation                             
 Hyst.                                   
 1-31:MB, 150-166:Conuco, Resto:I2C      
 No hacer nada                           
