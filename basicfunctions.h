@@ -138,28 +138,6 @@ String ICACHE_FLASH_ATTR extrae(boolean eschar, String cad, String subcad)
   { subcad.concat("\"");
     return cad.substring(cad.indexOf(subcad)+subcad.length()+(eschar?2:1), cad.indexOf(",",cad.indexOf(subcad))-(eschar?1:0));      }
 
-//char* ICACHE_FLASH_ATTR ftoa(int valor)
-//{  
-//  char buff1[10],buff2[10];
-//  itoa(valor/100,buff1,10);
-//  itoa(valor%100,buff2,10);
-//  strcat(buff1,".");
-//  strcat(buff1,buff2);
-//  return buff1;
-//}  
-
-//char* ICACHE_FLASH_ATTR ftoa(float valor, int dec)
-//{  
-//  char buff1[10], buff2[10];
-//  itoa(valor/10,buff1,10);
-//  itoa(valor%10,buff2,10);
-//  Serial.print("buff1:"); Serial.print(buff1);
-//  Serial.print(" buff2:"); Serial.println(buff2);
-//  strcat(buff1,".");
-//  strcat(buff1,buff2);
-//  return buff2;
-//}  
-
 void ICACHE_FLASH_ATTR tictac(int pin, int n, int delayed)
   { for (int i=0;i<n;i++) 
     {digitalWrite(pin,1); delay(delayed); digitalWrite(pin, 0); delay(delayed);} }
@@ -338,12 +316,12 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
   printP(table, b);
   printP(c(tclass));
   printP(ig, tmenu, mayor, tr); // formato menú
-  if (conf.modohp!=1)
+  if (conf.modobc==0)
     printOpc(false, (opcprin==1), t(zonas), panelhtm); // PANEL
-  else
+  else if (conf.modobc==1)
     printOpc(false, (opcprin==1), c(panel), panelhtm); // Bomba de calor
   printOpc(false, (opcprin==3), t(configuracion), sdhtm); // CONFIGURACIÓN
-  printOpc(false, (opcprin==2), t(programas), sprghtm); // Programas
+  if (conf.modobc==0) printOpc(false, (opcprin==2), t(programas), sprghtm); // Programas
   printOpc(false, (opcprin==4), t(sistema), espsyshtm); // Sistema
 
   if (conf.usepassDev)
@@ -361,7 +339,7 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
   printP(tmenu, mayor, tr);  // formato menú
   if (opcprin == 1) // PANELES
     {
-    if (conf.modohp!=1) 
+    if (conf.modobc!=1) 
       {
       for (byte i=0; i<maxpaneles; i++)
         if (getbit8(conf.bshowpanel, i))
@@ -370,28 +348,29 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
     }
   else if (opcprin==2) // PROGRAMACIÓN
     {
-    if (conf.modohp!=1) printOpc(false, opcsec==5, t(programas), sprghtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==1, t(semanal), ssehtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==2, t(condiciones), svhtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==3, t(fecha), sfhtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==4, t(escenas), seschtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==7, t(webcalls), swchtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==5, t(programas), sprghtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==1, t(semanal), ssehtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==2, t(condiciones), svhtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==3, t(fecha), sfhtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==4, t(escenas), seschtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==7, t(webcalls), swchtm);
     }
   else if (opcprin==3) // CONFIGURACIÓN
     {
     printOpc(false, opcsec==0, t(dispositivo), sdhtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==5, t(zonas), sphtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==2, t(mandorf), rfhtm);
-    printOpc(false, opcsec==3, t(red), snehtm);
+    if (conf.modobc==0) printOpc(false, opcsec==5, t(zonas), sphtm);
+    if (conf.modobc==0) printOpc(false, opcsec==2, t(mandorf), rfhtm);
+    printOpc(false, opcsec==3, t(tred), snehtm);
     printOpc(false, opcsec==4, t(servred), snshtm);
-    printOpc(false, opcsec==1, c(senales), siohtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==10, t(remotos), slkhtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==11, c(salremotas), sremhtm);
+    if (conf.modobc==0) printOpc(false, opcsec==1, c(senales), siohtm);
+    if (conf.modobc==0) printOpc(false, opcsec==10, t(remotos), slkhtm);
+    if (conf.modobc==0) printOpc(false, opcsec==11, c(salremotas), sremhtm);
+    if (conf.modobc==1) printOpc(false, opcsec==12, t(bombacalor), sbhtm);
     }
   else if (opcprin==4) // SISTEMA
     {
     printOpc(false, opcsec==4, t(statust), espsyshtm);
-    if (conf.modohp!=1) printOpc(false, opcsec==3, t(files), fileshtm);
+    if (conf.modobc!=1) printOpc(false, opcsec==3, t(files), fileshtm);
     printOpc(false, opcsec==5, t(seguridad), sshtm);
     printOpc(false, opcsec==1, t(actualizar), suhtm);
     printOpc(false, opcsec==2, treset, rshtm);

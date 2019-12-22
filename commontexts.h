@@ -59,6 +59,7 @@ PGM_P(sshtm)="ss";
 PGM_P(srlhtm)="srl";
 PGM_P(slkhtm)="sr";
 PGM_P(sremhtm)="ssr";
+PGM_P(sbhtm)="sb";
 PGM_P(sdhtm)="sd";
 PGM_P(sphtm)="sp";
 PGM_P(sbphtm)="sbp";

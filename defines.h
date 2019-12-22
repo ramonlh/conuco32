@@ -28,10 +28,10 @@
   #define maxsensortype 30 
   
   // placa grande. 80x75
-  #define I0 35    // OK    // Inputs
-  #define I1 34    // OK  
-  #define I2 39    // OK  
-  #define I3 36    // OK  
+  #define I0 36    // OK    // Inputs
+  #define I1 39    // OK  
+  #define I2 34    // OK  
+  #define I3 35    // OK  
 
   #define O0 17    // OK  Relé 1
   #define O1 23    // OK  Relé 2     
@@ -50,30 +50,24 @@
   #define SPICLK 14
   #define SPICS 15
 
-  #define SDA 21          // I2C-SDA / O6
-  #define SCL 22          // I2C-SCL / O7
+  #define SDA 21          // I2C-SDA / O2
+  #define SCL 22          // I2C-SCL / O3
 
-  #define ADC0 32         // ADC0 / T3    No se puede usar el 27 con WiFi-> usar 32
-  #define ADC1 33         // ADC1 / T4    No se puede usar el 4 con WiFi-> usar 33
-  
-  #define DAC0 26         // DAC1 / W0
-  #define DAC1 25         // DAC1 / DHT
-  
-  #define W0 26          // 1 wire port / DAC0
-//  #define W1 25          // 1 wire port / DAC0
-
-//  #define T0 2           // TX433
-//  #define T1 4
-//  #define T2 32
-//  #define T3 27
-//  #define T4 33
+  #define W0 26          // 1 wire port 
 
   #define RX433 4
-  #define TX433 2         // T0
+  #define TX433 2      
+
+  #define TFT_CS 15
+  #define TFT_DC 21
+  #define TFT_MOSI 13
+  #define TFT_CLK 14 
+  #define TFT_RST 22
+  #define TFT_MISO 12
+
+  #define TS_CS 33
 
   #define baseAna 8
-
-//// BOMBA DE CALOR AGUA-AGUA
 
 ////////////////////////////////
 #define nEVE 8          // número de eventos
@@ -149,7 +143,7 @@
 #define preciokwh 62
 #define programa 63
 #define programas 64
-#define red 65
+#define tred 65
 #define servred 66
 #define reiniciando 67
 #define rele 68     // no usada
@@ -196,7 +190,8 @@
 #define faltafichero 109
 #define useftp 110
 #define guardarexportar 111  
-#define idioma 112                                  
+#define idioma 112  
+#define bombacalor 113  
 
 //////////////////////////////////////////////////////////////////////
 ////// textos, deben coincidir con los textos del fichero common.txt
@@ -375,7 +370,7 @@
 #define center_i 172
 #define center_f 173
 #define tclass 174
-#define connection 175 
+#define tconnection 175 
 //#define closet 176
 //#define contenttype 177
 #define contentdisposition 178
