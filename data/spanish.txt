@@ -110,5 +110,6 @@ Falta algún fichero necesarios<br>
 Use FTP o \"Sketch Data Upload          
 Guardar/Exportar                        
 Idioma                                  
+Bomba Calor                             
                                         
                                         
