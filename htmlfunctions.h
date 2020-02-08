@@ -253,6 +253,27 @@ void ICACHE_FLASH_ATTR printcampoCB(int numpar, int valact, PGM_P t0, PGM_P t1, 
   printcampoCB(numpar,valact,sizeof(t)/sizeof(t[0]),t,printtd);
 }
 
+void printaddr1Wire(byte i)
+{
+  for (uint8_t j=0; j<8; j++) { if (addr1Wire[i][j]<16) printP(cero); printH(addr1Wire[i][j]); } 
+}
+
+void ICACHE_FLASH_ATTR selectProbe(int numpar, int valact, boolean printtd)
+{
+  if (printtd) printP(td);
+  printinicampoCB(numpar);
+  for (byte j=0;j<nTemp;j++)   
+    {
+    printP(c(optionvalue));
+    printPiP(comillas, j, comillas);
+    if (valact==j) printselected(false);
+    printP(mayor); 
+    printaddr1Wire(j);
+    printP(c(option_f));   }
+  printP(c(select_f));
+  if (printtd) printP(td_f);
+}
+
 void ICACHE_FLASH_ATTR tituloFila(PGM_P texto, int num, PGM_P letra, int indice)
 {
   printP(td, paren_i);

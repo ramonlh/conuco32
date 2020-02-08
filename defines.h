@@ -1,5 +1,4 @@
 
-
   #define modelo 32
   #define portdefault 88
   #define ROMsize 4096
@@ -7,7 +6,7 @@
   #define SLAVE 0
   #define MASTER 1
   #define maxgpio 26
-  #define maxgpiovar 12
+  #define maxgpiovar 10
   #define maxED 4         // número entradas digitales
   #define maxSD 8        // número salidas digitales + reléss
   #define maxEA 2         // número ADC
@@ -27,7 +26,7 @@
   #define maxpaneles 10   // número máximo de paneles
   #define maxsensortype 30 
   
-  // placa grande. 80x75
+  // 
   #define I0 36    // OK    // Inputs
   #define I1 39    // OK  
   #define I2 34    // OK  
@@ -42,9 +41,12 @@
   #define O6 18    // OK            
   #define O7 16    // OK      
   
-  #define TX 1           // Serial port 
+  #define TX 1           // UART1 
   #define RX 3
-
+  #define RXD2 4        // UART2
+  #define TXD2 2
+ // #define RXD2 32        // UART2
+ // #define TXD2 33
   #define SPIMISO 12      // SPI
   #define SPIMOSI 13
   #define SPICLK 14
@@ -55,14 +57,14 @@
 
   #define W0 26          // 1 wire port 
 
-  #define RX433 4
-  #define TX433 2      
+  #define RX433 21
+  #define TX433 22     
 
   #define TFT_CS 15
   #define TFT_DC 21
   #define TFT_MOSI 13
   #define TFT_CLK 14 
-  #define TFT_RST 22
+  #define TFT_RSTxxx 22
   #define TFT_MISO 12
 
   #define TS_CS 33

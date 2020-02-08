@@ -166,7 +166,7 @@ void ICACHE_FLASH_ATTR buildJsonConf(boolean remoto, boolean sendpass, boolean r
   buildvalorI(letrav,vacio,vacio,-1,versinst,vacio);                                    // v, versión
   buildvalorI(letraa,letraa,vacio,-1,remoto?actualizauttemp:conf.actualizaut,vacio);    // aa, actualización automática
   buildvalorC(letraa,letral,vacio,-1,remoto?aliasdevicetemp:conf.aliasdevice,vacio);    // a1, alias
-  buildvalorI(letrai,letraf,vacio,-1,remoto?iftttenabletemp:conf.iftttenable,vacio);    // if, IFTTT enable
+  buildvalorI(letrai,letraf,vacio,-1,remoto?iftttenabledtemp:conf.iftttenabled,vacio);    // if, IFTTT enable
   buildvalorC(letrak,vacio,vacio,-1,remoto?iftttkeytemp:conf.iftttkey,vacio);           // k, IFTTT key
   buildvalorI(letrad,letraw,vacio,-1,remoto?mododweettemp:conf.mododweet,vacio);        // dw, dweet enable 
   buildvalorI(letram,letray,vacio,-1,remoto?modomyjsontemp:conf.modomyjson,vacio);      // my, myjson enable
@@ -362,7 +362,7 @@ void ICACHE_FLASH_ATTR parseJsonConf()
   
   conf.actualizaut=extrae(false,msg,aa).toInt();
   extrae(true,msg,al).toCharArray(conf.aliasdevice,20);
-  conf.iftttenable=extrae(false,msg,PSTR("if")).toInt();
+  conf.iftttenabled=extrae(false,msg,PSTR("if")).toInt();
   extrae(true,msg, PSTR("k")).toCharArray(conf.iftttkey,30);
   conf.mododweet=extrae(false,msg,PSTR("dw")).toInt();
   conf.modomyjson=extrae(false,msg,PSTR("my")).toInt();

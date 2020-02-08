@@ -87,7 +87,7 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 char iottweetuser[10]="";         // 10 bytes, IoTtweet account user ID
                 int peractrem=10;                 // 2 bytes, período de actualización automática a dispositivo maestro
                 byte tipoi2cmbrem[maxsalrem];     // 32 bytes, tipo de sensor de cada señal remota, I2C: 1:BMP085...
-                byte iftttenable=0;               // 1 byte, ifttt desactivado
+                byte iftttenabled=0;               // 1 byte, ifttt desactivado
                 char iftttkey[30]="";             // 30 bytes, ifttt key
                 byte iftttpinED[maxED]={0,0};     // 2 bytes, enviar ifttt entradas digitales, byte 1 para ON, byte 2 para OFF
                 byte iftttpinSD[maxSD]={0,0};     // 2 bytes, enviar ifttt salidas digitales, byte 1 para ON, byte 2 para OFF
@@ -108,29 +108,32 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 float setpoint[maxTemp]={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};  // setpoint temperaturas
                 byte salsetpoint[maxTemp]={0,0,0,0,0,0,0,0};      // salida asociada al setpoint (0,1 salidas locales; 2-17 salidas remotas)
                 byte accsetpoint[maxTemp]={2,2,2,2,2,2,2,2};      // acción asociada al setpoint (1=OFF,2=ON,0=ninguna)
-                byte MbC8[2]={0};                 // byte 1 para SD, byte 2 para ED
+                byte MbC8[2]={0,0};               // byte 1 para SD, byte 2 para ED
                 byte ftpenable=1;                 // 0=disnable, 1=enable
                 byte lang=0;                      // 0=español, 1=inglés
-                byte mqttenable=0;                // desactiva MQTT
+                byte mqttenabled=0;               // desactiva MQTT
                 char mqttserver[40]="";           // MQTT broker
                 char mqttpath[6][10]={"","","","","",""};             // MQTT path
                 char instname[10]="INSTAL";       // nombre de la instalación
                 byte mqttgpioenable[3]={0,0,0};   // 
                 unsigned int LIBRE2[19]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // LIBRES
                 byte modobc=0;  // modo bomba de calor = 1;
-                byte ngpio[30]={25,25,25,25,25,25,25,25,27,4,35,34,39,36,17,23,22,21,19,5,18,16,25,26,0,0,0,0,0,0};  // pin para cada señal 8x1-wire,2xEA,4xDI,8xDO, 2DHT, 6 libres)
+                byte ngpio[30]={26,26,26,26,26,26,26,26,36,39,34,35,17,23,34,27,19,5,18,16,0,0,0,0,0,0,0,0,0};  // pin para cada señal 8x1-wire,4xDI,8xDO, 6 libres)
                 byte tiporemote[maxdevrem]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};    // 16 bytes, tipo de cada dispositivo remoto. 0:Conuco8266, 1:conuco32
                 byte bshowbypanel[maxpaneles][7]; // 70 bytes, tabla para asignar señales a paneles
-                byte gpiosensortype[maxgpiovar]={0,0,0,0,0,0,0,0,0,0,0,0};    // tipo de sensor para cada GPIO variable
-                byte I2Cenabled=0;
-                byte SPIenabled=0;
+                byte gpiosensortype[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};    // tipo de sensor para cada GPIO variable
                 byte RX433enabled=0;
                 byte TX433enabled=0;
-                byte DS18enabled=0;
-                byte DHTenabled=0;
-                unsigned int gpioalfa[maxgpiovar]={0,0,0,0,0,0,0,0,0,0,0,0};    // valor de alfa para cada sensor (si es preciso)
-                unsigned int gpiobeta[maxgpiovar]={0,0,0,0,0,0,0,0,0,0,0,0};    // valor de beta para cada sensor (si es preciso)
-                unsigned int gpiogamma[maxgpiovar]={0,0,0,0,0,0,0,0,0,0,0,0};    // valor de alfa para cada sensor (si es preciso)
+                byte SPIenabled=0;
+                byte I2Cenabled=0;
+                byte TFTenabled=0;
+                byte LIBRE3=0;
+                unsigned int gpioalfa[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};    // valor de alfa para cada sensor (si es preciso)
+                unsigned int gpiobeta[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};    // valor de beta para cada sensor (si es preciso)
+                unsigned int gpiogamma[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};    // valor de alfa para cada sensor (si es preciso)
+                unsigned long contadoresgpio[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};  // 16 bytes, número de veces encendido/apagado de entradas digitales
+                byte MbC8gpio[4]={0,0,0,0};                 // byte 1 y 2 para SD, byte 3 y 4 para ED
+                byte rstper=0;                    
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes
@@ -142,18 +145,15 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
     byte spiPin[4]={SPIMISO,SPIMOSI,SPICLK,SPICS};  // pines SPI
     byte txrxPin[2]={TX,RX};                        // pines serial port
     byte rfPin[2]={RX433,TX433};                    // pines RF 433
-//    byte adcPin[2]={ADC0,ADC1};                     // pines ADC
-//    byte dacPin[2]={DAC0,DAC1};                     // pines DAC
-//    byte dhtPin[2]={DHT0,DHT1};                     // pines DHT
     byte owPin=W0;                                  // pin para DS18B20
-    const byte listgpiovar[maxgpiovar]={2,4,12,13,14,15,21,22,25,26,27,32};
+    const byte listgpiovar[maxgpiovar]={2,4,12,13,14,15,21,22,32,33};
 //  const byte listgpio[maxgpio]={1,2,3,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33,34,35,36,37,38,39};
     const byte listgpio[maxgpio]={1,2,3,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33,34,35,36,37,39};
     const char idpin8266[15][4]={"t0","t1","t2","a0","e0","e1","s0","s1","id","ip","ipp","c0","c1","c2","all"}; // hasta el 8 son pines.
-    const char idpin[34][4]={"t0","t1","t2","t3","t4","t5","t6","t7","a0","a1","e0","e1","e2","e3","s0","s1","s2","s3","s4","s5","s6","s7","id","ip","ipp",
+    const char idpin[34][4]={"t0","t1","t2","t3","t4","t5","t6","t7","e0","e1","e2","e3","s0","s1","s2","s3","s4","s5","s6","s7","x1","x2","id","ip","ipp",
                              "c0","c1","c2","c3","c4","c5","c6","c7","all"};
         // hasta el 22 son pines
-    const char sensortype[maxsensortype][10]={"Input","Output","ADC","DAC","","",
+    const char sensortype[maxsensortype][10]={"Input","Output","ADC","DAC","DHT","",
                                               "","","","","","","","","","","","","","","","","","","","","","","",""};
 
 //////  tratamiento de bits /////////////////////
@@ -185,6 +185,8 @@ uint8_t addr1Wire[maxTemp][8];
 unsigned long mact1,mact2,mact10,mact60,mact3600,mact86400; 
 unsigned long tempact[maxSD];   // 8x4, 32 bytes, tiempos desde activación. Al llegar a tempdef se desactiva la salida.
 unsigned long tempdes[maxSD];   // 8x4, 32 bytes, tiempos desde desactivación. Al llegar a tempdef se activa la salida.
+unsigned long tempactgpio[maxSD];   // 10x4, 40 bytes, tiempos desde activación. Al llegar a tempdef se desactiva la salida.
+unsigned long tempdesgpio[maxSD];   // 10x4, 40 bytes, tiempos desde desactivación. Al llegar a tempdef se activa la salida.
 byte tipoEDtemp[maxED]={0,0,0,0};   // 4x1, 4 bytes, tipo de la entrada digital: 0=ON/OFF, 1=OFF/ON, 2=DHT11,3=DHT21,4=DHT22,5=RS485 RX/TX, ...
 int nAP=0;                      // 2 bytes, redes encontradas con scanAP
 int nAPact=0;                   // 2 bytes, redes actual
@@ -223,7 +225,8 @@ byte ListOri[16]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};
 float factorAtemp[maxEA]={1.0,1.0}; // 1x4 factor conversión analógicas locales temp
 float offsetAtemp[maxEA]={0.0,0.0}; // 1x4 offset conversión analógicas locales temp
 
-byte MbC8ant[2]={0};             // estado anterior de SD y ED: 0:SD0, 1:SD1, 2:ED0, 3:ED1
+byte MbC8ant[2]={0,0};           // estado anterior de SD y ED: 0:SD0, 1:SD1, 2:ED0, 3:ED1
+byte MbC8antgpio[4]={0,0,0,0};   // estado anterior de gpios configurables
 int MbR[10];                     // 0-7 Temperaturas locales, 8-9 analógica local
 int MbRant[10];                  // 0-7 Temperaturas locales, 8-9 analógica local, valores anteriore
 byte iftttchange[2]={0};         // 0-7: salidas digitales,  8-11: entradas digitales
@@ -240,7 +243,7 @@ byte iddevicetemp=0;
 char aliasdevicetemp[20]="";
 char ssidSTAtemp[20]="";
 char passSTAtemp[20]="";
-byte iftttenabletemp=0;  
+byte iftttenabledtemp=0;  
 char iftttkeytemp[30]="";
 byte modomyjsontemp=0;
 byte mododweettemp=0;
@@ -275,6 +278,8 @@ long lastReconnectAttempt=0;
 boolean pendsave = false;
 boolean bmp085enabled=false;
 conucodata datosremoto;
+long lasttouch=0;
+boolean tfton=true;
 
 char admin[]="admin";
 
@@ -307,3 +312,6 @@ int testvalue=0;
 unsigned long tini=0;
 String sinput="";
 ////////////////////////////////////////
+const byte maxbt817=2;
+
+

@@ -408,4 +408,18 @@ void ICACHE_FLASH_ATTR printtiempo(unsigned long segundos)
     }
 }
 
-
+boolean gpiovis(byte i)
+  {
+  boolean gpiovis=false;
+  if (i==0) gpiovis=(conf.TX433enabled==0);
+  else if (i==1) gpiovis=(conf.RX433enabled==0);
+  else if (i==2) gpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));
+  else if (i==3) gpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));
+  else if (i==4) gpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));
+  else if (i==5) gpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));
+  else if (i==6) gpiovis=(conf.I2Cenabled==0);
+  else if (i==7) gpiovis=(conf.I2Cenabled==0);
+  else if (i==8) gpiovis=(conf.TFTenabled==0);
+  else if (i==9) gpiovis=(conf.TFTenabled==0);
+  return gpiovis;  
+  }

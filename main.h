@@ -263,9 +263,6 @@ void createdashfile()
         }
       else      // señales remotas
         {
-        Serial.print("i:"); Serial.print(i);
-        Serial.print(" conf.idsalremote[i-33]:"); Serial.print(conf.idsalremote[i-33]);
-        Serial.print(" conf.senalrem[i-33]:"); Serial.println(conf.senalrem[i-33]);
         if ((conf.idsalremote[i-33]>=1) && (conf.idsalremote[i-33]<=31))    // modbus
           {
           }
@@ -337,7 +334,7 @@ void createdashfile()
     f.close();   
     }
     
-  if (conf.mqttenable) {
+  if (conf.mqttenabled) {
     File f=SPIFFS.open(filedash,"r");
     if (f)  {
       if (!PSclient.connected()) mqttreconnect();
@@ -371,6 +368,19 @@ void ICACHE_FLASH_ATTR leevaloresDIG()
       }
     }
   MbC8ant[1]=conf.MbC8[1];
+  for (byte i=0;i<maxgpiovar;i++)
+    {
+    if (gpiovis(i))
+      {
+      if (conf.gpiosensortype[i]==0)   // input
+        {
+        byte valaux=digitalRead(listgpiovar[i]); 
+        setbit8(conf.MbC8gpio,i+16,valaux); 
+        }
+      }
+    }
+  MbC8antgpio[2]=conf.MbC8gpio[2];  MbC8antgpio[3]=conf.MbC8gpio[3];
+
 }
 
 void ICACHE_FLASH_ATTR leevaloresAN() 
@@ -490,7 +500,7 @@ int ICACHE_FLASH_ATTR postdweet(char* key)
 //////////////////  IFTTT  ///////////////////
 int ICACHE_FLASH_ATTR ifttttrigger(char *evento, char* key, char* value1, char* value2, char* value3)
 {
-  if (conf.iftttenable == 0) return 0;
+  if (conf.iftttenabled == 0) return 0;
   strcpy(auxchar, "/trigger/"); strcat(auxchar, evento); // value1, 2 y 3 tamaño máximo = 20
   strcat(auxchar, "/with/key/"); strcat(auxchar, key); strcat(auxchar, interr);
   strcat(auxchar, tvalue); strcat(auxchar, uno); strcat(auxchar, ig); strcat(auxchar, value1); strcat(auxchar, ampersand);
@@ -513,9 +523,9 @@ int ICACHE_FLASH_ATTR ifttttrigger(char *evento, char* key, char* value1, char* 
 void ICACHE_FLASH_ATTR pinVAL(byte n, byte value, byte ori)
 {
   if (n<maxSD)
+    {
     if (getbit8(conf.MbC8,n)!=value)
       {
-        Serial.print("pinval:"); Serial.print(sdPin[n]); Serial.print("-"); Serial.println(valorpin[value]);
       digitalWrite(sdPin[n], valorpin[value]);
       setbit8(conf.MbC8,n,value);
       setbit8(MbC8ant,n,value);
@@ -523,6 +533,24 @@ void ICACHE_FLASH_ATTR pinVAL(byte n, byte value, byte ori)
       if (value) tempact[n]=millis()/1000; else tempdes[n]=millis()/1000;
       setbit8(iftttchange, n,1);
       if (ori==conf.iddevice) { statusChange=true;  mqttpublish(n+14); }
+      }
+    }
+  else
+    if (getbit8(conf.MbC8gpio,n-10)!=value)
+      {
+      if ((n>=10) && (n<=19))   // gpios configurables
+        {
+        Serial.print("pinval n:"); Serial.print(n); Serial.print(" pin:"); Serial.print(listgpiovar[n-10]);
+        Serial.print(" actual:"); Serial.print(getbit8(conf.MbC8gpio,n-10));
+        Serial.print(" nuevo:"); Serial.println(value);
+        digitalWrite(listgpiovar[n-10], valorpin[value]);
+        setbit8(conf.MbC8gpio,n-10,value);
+        setbit8(MbC8antgpio,n-10,value);
+        saveconf();
+        if (value) tempactgpio[n]=millis()/1000; else tempdesgpio[n]=millis()/1000;
+        setbit8(iftttchange, n,1);
+        if (ori==conf.iddevice) { statusChange=true;  mqttpublish(n+14); }
+        }
       }
 }
 
@@ -561,7 +589,7 @@ int ICACHE_FLASH_ATTR checkMyIP()
   if (strcmp(conf.myippub, auxip) != 0) // son diferentes
     {
     saveconf();
-    if (conf.iftttenable) ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, "NewIP", conf.myippub);
+    if (conf.iftttenabled) ifttttrigger(conucochar, conf.iftttkey, conf.aliasdevice, "NewIP", conf.myippub);
     }
 }
 
@@ -628,8 +656,7 @@ void ICACHE_FLASH_ATTR onCmd()
     if (server.args() > 0)
       {
       byte auxi=server.arg(0).toInt();
-//      if ((auxi==sdPin[0])||(auxi==sdPin[1]||(auxi==sdPin[2]||(auxi==sdPin[3]||(auxi==sdPin[4]||(auxi==sdPin[5]||(auxi==sdPin[6]||(auxi==sdPin[7]))
-      if (auxi<maxSD)
+      if (auxi<20)
         pinVAL(auxi, 1, server.arg(1).toInt());   // tercer parámetro es el Id ori que lo pide
       else if (auxi <= 200)
         onescena(auxi - 100);
@@ -643,7 +670,7 @@ void ICACHE_FLASH_ATTR offCmd()
     if (server.args() > 0)
       {
       byte auxi=server.arg(0).toInt();
-//      if ((auxi==sdPin[0])||(auxi==sdPin[1]||(auxi==sdPin[2]||(auxi==sdPin[3]||(auxi==sdPin[4]||(auxi==sdPin[5]||(auxi==sdPin[6]||(auxi==sdPin[7]))
+      if (auxi<20)
         pinVAL(auxi, 0, server.arg(1).toInt());
       }
   sendOther(panelhtm, panelact);
@@ -704,7 +731,7 @@ void procesaeventos()
             }
           else if (conf.evensal[i]==despIFTTT) // mandar notificación
             {
-            if (conf.iftttenable) 
+            if (conf.iftttenabled) 
               if (getbit8(bevenENABLE[0],i)==1)
                 {
                 Serial.println("IFTTT dig sent");
@@ -748,7 +775,7 @@ void procesaeventos()
               }
             else if (conf.evensal[i]==despIFTTT)
               {
-              if (conf.iftttenable) 
+              if (conf.iftttenabled) 
                 if (getbit8(bevenENABLE[1],i)==1)
                   {
                   Serial.println("IFTTT ana sent");
@@ -863,26 +890,44 @@ void HtmlGetStateTemp(byte ind)
   printP(b, celsius, td_f);
 }
 
-void HtmlGetStateIn(byte ind)
+void HtmlGetStateIn(byte tipo, byte ind)
 {
-  colorea=(getbit8(conf.MbC8,ind+8)==1);
+  if (tipo==0) colorea=(getbit8(conf.MbC8,ind+8)==1);
+  else colorea=(getbit8(conf.MbC8gpio,ind+16)==1);
   printP(colorea?th:td,c(resetcontp));
   printI(ind);
-  printP(comillas,mayor,readdescr(filedesclocal,ind+8,20),href_f);
-  printP(colorea?th_f:td_f);
-  cell(conf.contadores[ind]);
+  printP(comillas,mayor);
+  if (tipo==0) printP(readdescr(filedesclocal,ind+8,20));
+  else printP(readdescr(filedescgpio,ind,20));
+  printP(href_f,colorea?th_f:td_f);
+  cell(tipo==0?conf.contadores[ind]:conf.contadoresgpio[ind]);
 }
 
-void HtmlGetStateOut(byte ind)
+void HtmlGetStateOut(byte tipo, byte ind)
 {
-  colorea=(getbit8(conf.MbC8, ind) == 1);
-  unsigned long segundos = (millis()/1000)-(colorea?tempact[ind]:tempdes[ind]);
-  printP(colorea?th:td, href_i,comilla, colorea?off:on,interr, letrap);
-  printP(ig);
-  printI(ind);
-  printP(amper,letran,ig);
-  printI(conf.iddevice);
-  printP(comilla, mayor,readdescr(filedesclocal,ind+12,20),href_f,colorea?th_f:td_f,td);
+  if (tipo==0) colorea=(getbit8(conf.MbC8, ind) == 1);
+  else colorea=(getbit8(conf.MbC8gpio, ind)==1);
+  unsigned long segundos=0;
+  if (tipo==0)
+    {
+    segundos = (millis()/1000)-(colorea?tempact[ind]:tempdes[ind]);
+    printP(colorea?th:td, href_i,comilla, colorea?off:on,interr, letrap);
+    printP(ig);
+    printI(ind);
+    printP(amper,letran,ig);
+    printI(conf.iddevice);
+    printP(comilla, mayor,readdescr(filedesclocal,ind+12,20),href_f,colorea?th_f:td_f,td);
+    }
+  else
+    {
+    segundos = (millis()/1000)-(colorea?tempactgpio[ind]:tempdesgpio[ind]);
+    printP(colorea?th:td, href_i,comilla, colorea?off:on,interr, letrap);
+    printP(ig);
+    printI(ind+10);
+    printP(amper,letran,ig);
+    printI(conf.iddevice);
+    printP(comilla, mayor,readdescr(filedescgpio,ind,20),href_f,colorea?th_f:td_f,td);
+    }
   printtiempo(segundos);
   printP(td_f);
 }
@@ -899,21 +944,43 @@ void handleStateTemp5() { handleStateTemp(5); }
 void handleStateTemp6() { handleStateTemp(6); }
 void handleStateTemp7() { handleStateTemp(7); }
 
-void handleStateIn(int ind) { msg=vacio; HtmlGetStateIn(ind); serversend200();  }
-void handleState0In() { handleStateIn(0); }
-void handleState1In() { handleStateIn(1); }
-void handleState2In() { handleStateIn(2); }
-void handleState3In() { handleStateIn(3); }
+void handleStateIn(byte tipo, int ind) { msg=vacio; HtmlGetStateIn(tipo,ind); serversend200();  }
+void handleState0In() { handleStateIn(0,0); }
+void handleState1In() { handleStateIn(0,1); }
+void handleState2In() { handleStateIn(0,2); }
+void handleState3In() { handleStateIn(0,3); }
 
-void handleStateOut(int ind) { msg=vacio; HtmlGetStateOut(ind); serversend200();  }
-void handleState0Out() { handleStateOut(0); }
-void handleState1Out() { handleStateOut(1); }
-void handleState2Out() { handleStateOut(2); }
-void handleState3Out() { handleStateOut(3); }
-void handleState4Out() { handleStateOut(4); }
-void handleState5Out() { handleStateOut(5); }
-void handleState6Out() { handleStateOut(6); }
-void handleState7Out() { handleStateOut(7); }
+void handleState0Ing() { handleStateIn(1,0); }
+void handleState1Ing() { handleStateIn(1,1); }
+void handleState2Ing() { handleStateIn(1,2); }
+void handleState3Ing() { handleStateIn(1,3); }
+void handleState4Ing() { handleStateIn(1,4); }
+void handleState5Ing() { handleStateIn(1,5); }
+void handleState6Ing() { handleStateIn(1,6); }
+void handleState7Ing() { handleStateIn(1,7); }
+void handleState8Ing() { handleStateIn(1,8); }
+void handleState9Ing() { handleStateIn(1,9); }
+
+void handleStateOut(byte tipo, int ind) { msg=vacio; HtmlGetStateOut(tipo,ind); serversend200();  }
+void handleState0Out() { handleStateOut(0,0); }
+void handleState1Out() { handleStateOut(0,1); }
+void handleState2Out() { handleStateOut(0,2); }
+void handleState3Out() { handleStateOut(0,3); }
+void handleState4Out() { handleStateOut(0,4); }
+void handleState5Out() { handleStateOut(0,5); }
+void handleState6Out() { handleStateOut(0,6); }
+void handleState7Out() { handleStateOut(0,7); }
+
+void handleState0Outg() { handleStateOut(1,0); }
+void handleState1Outg() { handleStateOut(1,1); }
+void handleState2Outg() { handleStateOut(1,2); }
+void handleState3Outg() { handleStateOut(1,3); }
+void handleState4Outg() { handleStateOut(1,4); }
+void handleState5Outg() { handleStateOut(1,5); }
+void handleState6Outg() { handleStateOut(1,6); }
+void handleState7Outg() { handleStateOut(1,7); }
+void handleState8Outg() { handleStateOut(1,8); }
+void handleState9Outg() { handleStateOut(1,9); }
 
 void HtmlGetStateR(byte rem)
 {
@@ -1117,15 +1184,14 @@ void ICACHE_FLASH_ATTR panelHTML() {
   // ENTRADAS DIGITALES
   for (byte i=0; i<maxED; i++)
     if (getbit8(conf.bshowbypanel[auxI], i+10))
-      if (conf.tipoED[i]<=1)  // entrada digital ON/OFF o OFF/ON (puede ser DHT)
-        {
-        printP(menor, letrat, letrar, b);
-        printP(c(tid), ig, comilla, letral); 
-        printI(i);
-        printP(comilla, mayor);
-        HtmlGetStateIn(i);
-        printP(tr_f);
-        }
+      {
+      printP(menor, letrat, letrar, b);
+      printP(c(tid), ig, comilla, letral); 
+      printI(i);
+      printP(comilla, mayor);
+      HtmlGetStateIn(0,i);
+      printP(tr_f);
+      }
 
   for (byte i=0; i<maxsalrem; i++) // entradas digitales remotas
     if (getbit8(conf.bshowbypanel[auxI], i+22))
@@ -1158,26 +1224,88 @@ void ICACHE_FLASH_ATTR panelHTML() {
     for (byte i=0;i<maxSD;i++)
       if (getbit8(conf.bshowbypanel[auxI], i+12))
         {
-        printP(menor, PSTR("tr"), b);
+        printP(menor, "tr", b);
         printP(c(tid), ig, comilla, letral); 
         printI(i+4);
         printP(comilla, mayor);
-        HtmlGetStateOut(i);
+        HtmlGetStateOut(0,i);
         printP(tr_f);
         }
     }
 
-  for (byte i=0; i<maxsalrem; i++) // Salidas digitales remotas
+  /*for (byte i=0; i<maxsalrem; i++) // Salidas digitales remotas
     if (getbit8(conf.bshowbypanel[auxI], i+22))
       if (conf.senalrem[i] >= 6)
         {
         byte val=getbit8(bstatremote, i);
-        printP(menor, "tr", b);
+        printP(menor, tr, b);
         printP(c(tid), ig, comilla, letrar); printI(i);
         printP(comilla, mayor);
         HtmlGetStateR(i);
         printP(tr_f);
+        }*/
+
+   for (byte i=0;i<maxgpiovar;i++)
+     {
+      if (gpiovis(i))
+        {
+        printP(tr);
+        if (conf.gpiosensortype[i]==0)    // input
+          {
+          printP(menor, letrat, letrar, b);
+          printP(c(tid), ig, comilla, letrag, letrai); 
+          printI(i);      // número de la etiqueta "#ln"
+          printP(comilla, mayor);
+          HtmlGetStateIn(1,i);
+          printP(tr_f);
+          }
+        else if (conf.gpiosensortype[i]==1)   // output
+          {
+          printP(menor, letrat, letrar, b);
+          printP(c(tid), ig, comilla, letrag, letrao); 
+          printI(i);
+          printP(comilla, mayor);
+          HtmlGetStateOut(1,i);
+          printP(tr_f);
+          }
+        else if (conf.gpiosensortype[i]==2)   // ADC
+          {
+          printP(menor, letrat, letrar, b);
+          printP(c(tid), ig, comilla, letral); 
+          printI(i);
+          printP(comilla, mayor);
+          HtmlGetStateOut(1,i);
+          printP(tr_f);
+          }
+        else if (conf.gpiosensortype[i]==3)   // DAC
+          {
+          printP(menor, letrat, letrar, b);
+          printP(c(tid), ig, comilla, letral); 
+          printI(i);
+          printP(comilla, mayor);
+          HtmlGetStateOut(1,i);
+          printP(tr_f);
+          }
+        else if (conf.gpiosensortype[i]==4)   // DHT
+          {
+          printP(menor, letrat, letrar, b);
+          printP(c(tid), ig, comilla, letral); 
+          printI(i);
+          printP(comilla, mayor);
+          HtmlGetStateOut(1,i);
+          printP(tr_f);
+          }
+        else
+          {
+          printP(td,readdescr(filedescgpio,i,20),td_f);
+          printP(td,sensortype[conf.gpiosensortype[i]]); 
+          printP(b); printI(conf.gpioalfa[i]);
+          printP(b); printI(conf.gpiobeta[i]);
+          printP(b); printI(conf.gpiogamma[i]);
+          printP(td_f,tr_f);
+          }
         }
+     }
 
   // final
   printP(menor,letrat,letrar,b,c(tid));
@@ -1238,7 +1366,7 @@ void ICACHE_FLASH_ATTR panelhpHTML() {
         printP(c(tid), ig, comilla, letral); 
         printI(i);
         printP(comilla, mayor);
-        HtmlGetStateIn(i);
+        HtmlGetStateIn(0,i);
         printP(tr_f);
         }
     }
@@ -1249,11 +1377,11 @@ void ICACHE_FLASH_ATTR panelhpHTML() {
     for (byte i=0;i<maxSD;i++)
       if (getbit8(conf.bshowbypanel[auxI], i+14))
         {
-        printP(menor, PSTR("tr"), b);
+        printP(menor, "tr", b);
         printP(c(tid), ig, comilla, letral); 
         printI(i+4);
         printP(comilla, mayor);
-        HtmlGetStateOut(i);
+        HtmlGetStateOut(0,i);
         printP(tr_f);
         }
     }
@@ -1270,6 +1398,7 @@ void ICACHE_FLASH_ATTR panelhpHTML() {
 void ICACHE_FLASH_ATTR indexHTML() 
   {
   if (conf.modobc==1) panelhpHTML(); 
+  else if (conf.modobc==2) panelHTML();
   else if (conf.modoterm==0) panelHTML(); 
   else termostatoHTML(); 
   }
@@ -1408,7 +1537,7 @@ void ICACHE_FLASH_ATTR extraevaloresTempConf(boolean withpass)
   versinsttemp = extrae(false, msg, PSTR("v")).toInt();
   actualizauttemp = extrae(false, msg, PSTR("aa")).toInt();
   extrae(true, msg, PSTR("al")).toCharArray(aliasdevicetemp, 20);
-  iftttenabletemp = extrae(false, msg, PSTR("if")).toInt();
+  iftttenabledtemp = extrae(false, msg, PSTR("if")).toInt();
   extrae(true, msg, PSTR("k")).toCharArray(iftttkeytemp, 30);
   mododweettemp = extrae(false, msg, PSTR("dw")).toInt();
   modomyjsontemp = extrae(false, msg, PSTR("my")).toInt();
@@ -1793,25 +1922,16 @@ void ICACHE_FLASH_ATTR setupioHTML()
   printremote();
   if (!autOK()) { sendOther(loghtm,-1); return; }
   msg=vacio;
-  mp=13;  // número de parámetros por fila
+  mp=21;  // número de parámetros por fila
   if (server.method()==HTTP_POST)
     {
-    if ((posactio>=10) && (posactio<=13)) { setbit8(conf.iftttpinED, posactio-10,0); setbit8(conf.iftttpinED, posactio-2,0); }
-    if ((posactio>=14) && (posactio<=21)) { setbit8(conf.iftttpinSD, posactio-14,0); setbit8(conf.iftttpinSD, posactio-6,0); }
+    if ((posactio>=8) && (posactio<=11)) { setbit8(conf.iftttpinED, posactio-8,0); setbit8(conf.iftttpinED, posactio,0); }
+    if ((posactio>=12) && (posactio<=19)) { setbit8(conf.iftttpinSD, posactio-12,0); setbit8(conf.iftttpinSD, posactio-4,0); }
+    if ((posactio>=20) && (posactio<=29)) { setbit8(conf.mqttgpioenable,posactio-20,0); }
     setbit8(conf.mqttsalenable,posactio,0);
-    setbit8(conf.mqttsalenable,posactio,0);
-    conf.DS18enabled=0;
-    conf.DHTenabled=0;
-    conf.TX433enabled=0;
-    conf.RX433enabled=0;
-    conf.SPIenabled=0;
-    conf.I2Cenabled=0;
-    conf.ngpio[0]=26;
     for (int i=0  ;i<server.args(); i++)
       {
       calcindices(i);
-      Serial.print("Indice/resto:"); Serial.print(indice);Serial.print("/"); Serial.print(resto);
-      Serial.print("  val:"); Serial.println(server.arg(i));
       if (indice<=7)  // temperaturas
         {
         if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedesclocal,auxdesc,indice,20); }
@@ -1820,90 +1940,39 @@ void ICACHE_FLASH_ATTR setupioHTML()
         else if (resto==3) { conf.salsetpoint[indice]=server.arg(i).toInt(); }  // salida asociada
         else if (resto==4) { conf.accsetpoint[indice]=server.arg(i).toInt(); }  // acción consigna
         }
-      else if ((indice>=10) && (indice<=13)) // entradas digitales
+      else if ((indice>=8) && (indice<=11)) // entradas digitales
         {
         if (resto==0) { server.arg(i).toCharArray(auxdesc,20); savedescr(filedesclocal, auxdesc,indice,20); }
         else if (resto==1) { setbit8(conf.mqttsalenable,indice,1); }
-        else if (resto==5) { conf.tipoED[indice-10] = server.arg(i).toInt(); }  
-        else if (resto==6) { setbit8(conf.iftttpinED, indice-10, server.arg(i).toInt()); }   // Notificar si/no
-        else if (resto==7) { setbit8(conf.iftttpinED, indice-2, server.arg(i).toInt()); }  // Notificar si/no
+        else if (resto==5) { conf.tipoED[indice-8] = server.arg(i).toInt(); }  
+        else if (resto==6) { setbit8(conf.iftttpinED, indice-8, server.arg(i).toInt()); }   // Notificar si/no
+        else if (resto==7) { setbit8(conf.iftttpinED, indice, server.arg(i).toInt()); }  // Notificar si/no
         }
-      else if ((indice>=14) && (indice<=21)) // salidas digitales
+      else if ((indice>=12) && (indice<=19)) // salidas digitales
         {
         if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedesclocal, auxdesc, indice, 20); }
         else if (resto==1) { setbit8(conf.mqttsalenable,indice,1); }
-        else if (resto==6) { setbit8(conf.iftttpinSD, indice-14, server.arg(i).toInt());  }   // Notificar si/no
-        else if (resto==7) { setbit8(conf.iftttpinSD, indice-6, server.arg(i).toInt());  }    // Notificar si/no
-        else if (resto==8) { conf.valinic[indice-14] = server.arg(i).toInt();  }              // valor inicial
-        else if (resto==9) { conf.tempdefact[indice-14] = server.arg(i).toInt();  }           // Seg. ON
-        else if (resto==10) { conf.tempdefdes[indice-14] = server.arg(i).toInt();  }          // Seg. OFF
+        else if (resto==6) { setbit8(conf.iftttpinSD, indice-12, server.arg(i).toInt());  }   // Notificar si/no
+        else if (resto==7) { setbit8(conf.iftttpinSD, indice-4, server.arg(i).toInt());  }    // Notificar si/no
+        else if (resto==8) { conf.valinic[indice-12] = server.arg(i).toInt();  }              // valor inicial
+        else if (resto==9) { conf.tempdefact[indice-12] = server.arg(i).toInt();  }           // Seg. ON
+        else if (resto==10) { conf.tempdefdes[indice-12] = server.arg(i).toInt();  }          // Seg. OFF
         }
-      else if (indice==23) // TX433
+      else if ((indice>=20) && (indice<=29))  // GPIOS configurables
         {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==11) { conf.TX433enabled=1; }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
-        }
-      else if (indice==24) // RX433
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==12) { conf.RX433enabled=1; }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
-        }
-      else if (indice==25) // SPI
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==13) { conf.SPIenabled=1; }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
-        }
-      else if (indice==29) // I2C
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==14) { conf.I2Cenabled=1; }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
-        }
-      else if (indice==31) // DHT
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==15) { conf.DHTenabled=1; }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
-        }
-      else if (indice==32) // DS18B20
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==16) { conf.DS18enabled=1; }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
-        }
-      else  // resto GPIOS
-        {
-        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-23,20); }
-        if (resto==1) { setbit8(conf.mqttgpioenable,indice-23,1); }
-        if (resto==18) { conf.gpioalfa[indice-23]=server.arg(i).toInt(); }
-        if (resto==19) { conf.gpiobeta[indice-23]=server.arg(i).toInt(); }
-        if (resto==20) { conf.gpiogamma[indice-23]=server.arg(i).toInt(); }
+        if (resto==0) { server.arg(i).toCharArray(auxdesc, 20); savedescr(filedescgpio,auxdesc,indice-20,20); }
+        else if (resto==1) { setbit8(conf.mqttgpioenable,indice-20,1); }
+        else if (resto==17) 
+          { 
+          conf.gpiosensortype[indice-20]=server.arg(i).toInt(); }
+        else if (resto==18) { conf.gpioalfa[indice-20]=server.arg(i).toInt(); }
+        else if (resto==19) { conf.gpiobeta[indice-20]=server.arg(i).toInt(); }
+        else if (resto==20) { conf.gpiogamma[indice-20]=server.arg(i).toInt(); }
         }
       }
     if (conf.modoterm==1) { conf.tempdefact[0]=0; conf.tempdefdes[0]=0;  }
     saveconf();
-    posactio++; if (posactio>22+maxgpiovar) posactio=0;
+    posactio++; if (posactio>20+maxgpiovar) posactio=0;
     sendOther(siohtm,-1); return;
     }
   if (server.args() > 0) 
@@ -1916,7 +1985,6 @@ void ICACHE_FLASH_ATTR setupioHTML()
   writeForm(siohtm);
   //Serial.print("posactio:"); Serial.println(posactio);
   printP(tr);
-  printColspan(2);
   tcell(descripcion); 
   ccell(gpio);
   printP(td,c(mqtt),td_f);
@@ -1924,76 +1992,71 @@ void ICACHE_FLASH_ATTR setupioHTML()
   tcell(consigna);
   tcell(salida);
   printP(td,ONOFF,td_f,tr_f);
-  for (byte i=0; i<23+maxgpiovar; i++)
+  for (byte i=0; i<20+maxgpiovar; i++)
     {
     mpi=mp*i;
     if (i<=7) // Sondas temperatura
       {
       printP(tr);
-      printColspan(2);  
-      if (conf.DS18enabled==0)
+      if (posactio==i)
         {
-        printP(td,readdescr(filedesclocal,i,20),td_f); printColspan(6); printP("Disabled");printP(td_f);
+        printP(td, menor, c(tinput), b, type, ig);
+        printP(comillas, c(ttext), comillas, b);
+        printP(c(namet), ig);
+        printPiP(comillas, mpi, comillas);
+        printP(b, tvalue, ig, comillas);
+        printP(readdescr(filedesclocal,i,20));
+        printP(comillas,b,c(max_length));
+        printIP(19, size_i);
+        printI(19);
+        printP(comillas, mayor, menor, barra, c(tinput), mayor);
+        printP(td_f);
+        cell(W0);
+        pc(select_f);
+        checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
+
+        selectProbe(99, 0, true);
+   
+        printP(td);
+        printcampoF(mpi+2, conf.setpoint[i], 1); // valor de consigna
+        printP(td_f,td,c(Select_name),comillas);
+        printI(mpi+3);
+        printP(comillas, mayor);       // señal de salida
+        for (byte j=0; j<maxSD; j++)   { // salidas digitales locales
+          pc(optionvalue);
+          printPiP(comillas, j, comillas);
+          if (conf.salsetpoint[i]==j) printP(b, selected, ig, comillas, selected, comillas);
+          if (conf.showN) printPiP(mayorparen, j, parenguion); else printP(mayor);
+          printP(readdescr(filedesclocal,j+12,20));
+          pc(option_f);
+          }
+        pc(select_f);
+        printP(td_f,td,c(Select_name),comillas);
+        printIP(mpi+4, comillas);
+        printP(mayor);
+        for (byte k=0; k<3; k++) {
+          pc(optionvalue);
+          printPiP(comillas, k, comillas);
+          if (k==conf.accsetpoint[i]) printP(b, selected, ig, comillas, selected, comillas);
+          printP(mayor, k==0?OFF:k==1?ON:guion,c(option_f));
+          }
+        pc(select_f);
         }
       else
         {
-        if (posactio==i)
-          {
-          printP(td, menor, c(tinput), b, type, ig);
-          printP(comillas, c(ttext), comillas, b);
-          printP(c(namet), ig);
-          printPiP(comillas, mpi, comillas);
-          printP(b, tvalue, ig, comillas);
-          printP(readdescr(filedesclocal,i,20));
-          printP(comillas,b,c(max_length));
-          printIP(19, size_i);
-          printI(19);
-          printP(comillas, mayor, menor, barra, c(tinput), mayor);
-          printP(td_f);
-          cell(conf.ngpio[0]);
-          pc(select_f);
-          checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
-          printP(td);
-          for (uint8_t j=0; j<8; j++) { if (addr1Wire[i][j]<16) printP(cero); printH(addr1Wire[i][j]); }
-          printP(td_f,td);
-          printcampoF(mpi+2, conf.setpoint[i], 1); // valor de consigna
-          printP(td_f,td,c(Select_name),comillas);
-          printI(mpi+3);
-          printP(comillas, mayor);       // señal de salida
-          for (byte j=0; j<maxSD; j++)   { // salidas digitales locales
-            pc(optionvalue);
-            printPiP(comillas, j, comillas);
-            if (conf.salsetpoint[i]==j) printP(b, selected, ig, comillas, selected, comillas);
-            if (conf.showN) printPiP(mayorparen, j, parenguion); else printP(mayor);
-            printP(readdescr(filedesclocal,j+14,20));
-            pc(option_f);
-            }
-          pc(select_f);
-          printP(td_f,td,c(Select_name),comillas);
-          printIP(mpi+4, comillas);
-          printP(mayor);
-          for (byte k=0; k<3; k++) {
-            pc(optionvalue);
-            printPiP(comillas, k, comillas);
-            if (k==conf.accsetpoint[i]) printP(b, selected, ig, comillas, selected, comillas);
-            printP(mayor, k==0?OFF:k==1?ON:guion,c(option_f));
-            }
-          pc(select_f);
-          }
-        else
-          {
-          readdescr(filedesclocal,i,20);
-          strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar,itoa(i,buff,10));
-          printOpc(false, false, auxdesc);
-          cell(conf.ngpio[0]);
-          cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-          printP(td); for (uint8_t j=0; j<8; j++) { if (addr1Wire[i][j]<16) printP(cero); printH(addr1Wire[i][j]); } printP(td_f);
-          cell(conf.setpoint[i],2);
-          printP(td); 
-          printP(readdescr(filedesclocal,conf.salsetpoint[i]+14,20));  
-          printP(td_f);
-          printP(td,conf.accsetpoint[i]==0?OFF:conf.accsetpoint[i]==1?ON:guion,td_f);
-          }
+        readdescr(filedesclocal,i,20);
+        strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar,itoa(i,buff,10));
+        printOpc(false, false, auxdesc);
+        cell(W0);
+        cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
+        printP(td); 
+        printaddr1Wire(i);
+        printP(td_f);
+        cell(conf.setpoint[i],2);
+        printP(td); 
+        printP(readdescr(filedesclocal,conf.salsetpoint[i]+12,20));  
+        printP(td_f);
+        printP(td,conf.accsetpoint[i]==0?OFF:conf.accsetpoint[i]==1?ON:guion,td_f);
         }
       printP(tr_f);
       }
@@ -2001,11 +2064,10 @@ void ICACHE_FLASH_ATTR setupioHTML()
       {
       if (i==8)  
         { 
-        espacioSep(9);
-        printP(tr); printColspan(5); tcell(ttipo); printColspan(2); printP(td_f); ccell(ifttt); printP(tr_f); 
+        espacioSep(7);
+        printP(tr); printColspan(3); tcell(ttipo); printColspan(2); printP(td_f); ccell(ifttt); printP(tr_f); 
         }
       printP(tr);
-      printColspan(2);
       if (posactio==i) 
         {
         printP(td, menor, c(tinput), b, type, ig);
@@ -2022,7 +2084,7 @@ void ICACHE_FLASH_ATTR setupioHTML()
         printP(td_f);
         cell(edPin[i-8]);
         checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
-        printcampoCB(mpi+5, conf.tipoED[i-8], ONOFF, OFFON, dhtt,true);
+        printcampoCB(mpi+5, conf.tipoED[i-8], ONOFF, OFFON,true);
         printColspan(2);
         printP(td);
         checkBox(mpi+6, getbit8(conf.iftttpinED, i-8),false); // checkbox Notificar ON
@@ -2041,118 +2103,105 @@ void ICACHE_FLASH_ATTR setupioHTML()
         printP(td, getbit8(conf.iftttpinED,i-8)?symyes:symnot);
         printP(barra, getbit8(conf.iftttpinED,i-0)?symyes:symnot);
         }
-      printP(td_f);
-      printP(tr_f);
+      printP(td_f,tr_f);
       }
    if ((i>=12) && (i<=19))    // salidas digitales
      {
      printP(tr);
-     if (((i<14) && (i>15)) || (conf.I2Cenabled==0))
+    if (i==12) { espacioSep(7);  printP(tr); printColspan(3); ccell(defaultt); ccell(tdefact); ccell(tdefdes); ccell(ifttt); printP(tr_f); }
+    if (posactio==i) 
       {
-      if (i==12) { espacioSep(9);  printP(tr); printColspan(5); ccell(defaultt); ccell(tdefact); ccell(tdefdes); ccell(ifttt); printP(tr_f); }
-      printColspan(2);
-      if (posactio==i) 
-        {
-        printP(td, menor, c(tinput), b, type, ig);
-        printP(comillas, c(ttext), comillas, b);
-        printP(c(namet), ig);
-        printPiP(comillas, mpi, comillas);
-        printP(b, tvalue, ig, comillas);
-        printP(readdescr(filedesclocal, i, 20));
-        printP(comillas,b,c(max_length));
-        printIP(19, size_i);
-        printI(19);
-        printP(comillas, mayor, menor, barra, c(tinput), mayor);
-        printP(td_f);
-        cell(sdPin[i-12]);
-
-        checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
-        printcampoCB(mpi+8, conf.valinic[i-12], OFF, ON, ultimovalor,true);
-        printcampoL(mpi+9, conf.tempdefact[i-12], 8, true,true);
-        printcampoL(mpi+10, conf.tempdefdes[i-12], 8, true,true);
-        printP(td);
-        checkBox(mpi+6, getbit8(conf.iftttpinSD, i-12),false); // checkbox Notificar ON
-        printP(barra);
-        checkBox(mpi+7, getbit8(conf.iftttpinSD, i-4 + 8),false); // checkbox Notificar OFF
-        }
-      else
-        {
-        readdescr(filedesclocal,i,20);
-        strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
-        printOpc(false, false, auxdesc);
-        cell(sdPin[i-12]);
-  
-        cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
-        cell(conf.valinic[i-12]==0?OFF : conf.valinic[i-12] == 1 ? ON : ultimovalor);
-        cell(conf.tempdefact[i-12]);
-        cell(conf.tempdefdes[i-12]);
-        printP(td,getbit8(conf.iftttpinSD,i-12)?symyes:symnot, barra,getbit8(conf.iftttpinSD,i-4)?symyes:symnot);
-        }
+      printP(td, menor, c(tinput), b, type, ig);
+      printP(comillas, c(ttext), comillas, b);
+      printP(c(namet), ig);
+      printPiP(comillas, mpi, comillas);
+      printP(b, tvalue, ig, comillas);
+      printP(readdescr(filedesclocal, i, 20));
+      printP(comillas,b,c(max_length));
+      printIP(19, size_i);
+      printI(19);
+      printP(comillas, mayor, menor, barra, c(tinput), mayor);
       printP(td_f);
+      cell(sdPin[i-12]);
+
+      checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
+      printcampoCB(mpi+8, conf.valinic[i-12], OFF, ON, ultimovalor,true);
+      printcampoL(mpi+9, conf.tempdefact[i-12], 8, true,true);
+      printcampoL(mpi+10, conf.tempdefdes[i-12], 8, true,true);
+      printP(td);
+      checkBox(mpi+6, getbit8(conf.iftttpinSD, i-12),false); // checkbox Notificar ON
+      printP(barra);
+      checkBox(mpi+7, getbit8(conf.iftttpinSD, i-4),false); // checkbox Notificar OFF
       }
+    else
+      {
+      readdescr(filedesclocal,i,20);
+      strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
+      printOpc(false, false, auxdesc);
+      cell(sdPin[i-12]);
+
+      cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
+      cell(conf.valinic[i-12]==0?OFF : conf.valinic[i-12] == 1 ? ON : ultimovalor);
+      cell(conf.tempdefact[i-12]);
+      cell(conf.tempdefdes[i-12]);
+      printP(td,getbit8(conf.iftttpinSD,i-12)?symyes:symnot, barra,getbit8(conf.iftttpinSD,i-4)?symyes:symnot);
+      }
+      printP(td_f);
      printP(tr_f);
      }
-    if (i>=23)    // GPIOs configurables
+    if (i>=20)    // GPIOs configurables
       {
-      if (i==23) { espacioSep(9); }
-      if (i==23)
+      if (i==20)
         {
-        printP(tr);
-        printColspan(6); printP("GPIOS configurables", td_f);
+        espacioSep(7); printP(tr);
+        printColspan(4); printP("GPIOS configurables", td_f);
         printP(td,letraa,td_f,td,letrab,td_f); printP(td,letrac,td_f,tr_f);   
-        printP(tr,td,"TX433",td_f); 
-        checkBox(mpi+11,conf.TX433enabled,true);  
         }
-      else if (i==24) { printP(tr, td,"RX433",td_f); checkBox(mpi+12,conf.RX433enabled,true);  }
-      else if (i==25) { printP(tr, td,"SPI",td_f); checkBox(mpi+13,conf.SPIenabled,true); } 
-      else if (i==29) { printP(tr, td,"I2C",td_f); checkBox(mpi+14,conf.I2Cenabled,true); }  
-      else if (i==31) { printP(tr, td,"DHT",td_f); checkBox(mpi+15,conf.DHTenabled,true); } 
-      else if (i==32) { printP(tr, td,"DS18B20",td_f); checkBox(mpi+16,conf.DS18enabled,true); } 
-      else  { printP(tr, td,td_f,td,td_f);  }
-      if (posactio==i)
+      if (gpiovis(i-20))
         {
-        printP(td, menor, c(tinput), b, type, ig);
-        printP(comillas, c(ttext), comillas, b);
-        printP(c(namet), ig);
-        printPiP(comillas, mpi, comillas);
-        printP(b, tvalue, ig, comillas);
-        printP(readdescr(filedescgpio,i-23,20));
-        printP(comillas,b,c(max_length));
-        printIP(19, size_i);
-        printI(19);
-        printP(comillas, mayor, menor, barra, c(tinput), mayor);
-        printP(td_f);
-        
-        printPiP(td,listgpiovar[i-23],td_f);
-        checkBox(mpi+1,(getbit8(conf.mqttgpioenable,i-23)),true);
-        printP(td,c(Select_name),comillas);
-        printIP(mpi+17, comillas);
-        printP(mayor);
-        for (byte k=0; k<maxsensortype; k++) {
-          pc(optionvalue);
-          printPiP(comillas, k, comillas);
-          if (k==conf.gpiosensortype[i]) printP(b, selected, ig, comillas, selected, comillas);
-          printP(mayor, sensortype[k],c(option_f));
+        if (posactio==i)
+          {
+          printP(td, menor, c(tinput), b, type, ig);
+          printP(comillas, c(ttext), comillas, b);
+          printP(c(namet), ig);
+          printPiP(comillas, mpi, comillas);
+          printP(b, tvalue, ig, comillas);
+          printP(readdescr(filedescgpio,i-20,20));
+          printP(comillas,b,c(max_length));
+          printIP(19, size_i);
+          printI(19);
+          printP(comillas, mayor, menor, barra, c(tinput), mayor);
+          printP(td_f);
+          
+          printPiP(td,listgpiovar[i-20],td_f);
+          checkBox(mpi+1,(getbit8(conf.mqttgpioenable,i-20)),true);
+          printP(td,c(Select_name),comillas);
+          printIP(mpi+17, comillas);
+          printP(mayor);
+          for (byte k=0; k<maxsensortype; k++) {
+            pc(optionvalue);
+            printPiP(comillas, k, comillas);
+            if (k==conf.gpiosensortype[i-20]) printP(b, selected, ig, comillas, selected, comillas);
+            printP(mayor, sensortype[k],c(option_f));
+            }
+          pc(select_f);
+          printP(td_f);
+          printcampoL(mpi+18, conf.gpioalfa[i-20], 5, true,true);  
+          printcampoL(mpi+19, conf.gpiobeta[i-20], 5, true,true);  
+          printcampoL(mpi+20, conf.gpiogamma[i-20], 5, true,true);  
           }
-        pc(select_f);
-        printP(td_f);
-        printcampoL(mpi+18, conf.gpioalfa[i], 5, true,true);  
-        printcampoL(mpi+19, conf.gpiobeta[i], 5, true,true);  
-        printcampoL(mpi+20, conf.gpiogamma[i], 5, true,true);  
-        
-        }
-      else
-        {
-        readdescr(filedescgpio,i-23,20);
-        strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
-
-        printOpc(false, false, auxdesc);
-        printPiP(td,listgpiovar[i-23],td_f);
-        cell(getbit8(conf.mqttgpioenable,i-23)?symyes:symnot);
-        printP(td,sensortype[conf.gpiosensortype[i-23]],td_f);
-        printPiP(td,conf.gpioalfa[i-23],td_f);
-        printPiP(td,conf.gpiobeta[i-23],td_f);
-        printPiP(td,conf.gpiogamma[i-23],td_f);
+        else
+          {
+          readdescr(filedescgpio,i-20,20);
+          strcpy(auxchar, siohtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
+          printOpc(false, false, auxdesc);
+          printPiP(td,listgpiovar[i-20],td_f);
+          cell(getbit8(conf.mqttgpioenable,i-20)?symyes:symnot);
+          printP(td,sensortype[conf.gpiosensortype[i-20]],td_f);
+          printPiP(td,conf.gpioalfa[i-20],td_f);
+          printPiP(td,conf.gpiobeta[i-20],td_f);
+          printPiP(td,conf.gpiogamma[i-20],td_f);
+          }
         }
       }
     printP(tr_f);
@@ -2170,6 +2219,8 @@ void ICACHE_FLASH_ATTR setupDevHTML()
   if (server.method()==HTTP_POST)
     {
     conf.showN=0; conf.modoterm=0; conf.actualizaut=0;
+    conf.RX433enabled=0; conf.TX433enabled=0; conf.SPIenabled=0;
+    conf.I2Cenabled=0; conf.TFTenabled=0;
     for (int i=0; i<server.args(); i++)
       {
       calcindices(i);
@@ -2193,6 +2244,12 @@ void ICACHE_FLASH_ATTR setupDevHTML()
       else if (param_number==18) { server.arg(i).toCharArray(conf.fwUrlBase, server.arg(i).length()+1); }  // fwUrlBase
       else if (param_number==20) { conf.lang = server.arg(i).toInt(); } // idioma
       else if (param_number==21) { conf.modobc = server.arg(i).toInt(); } // modo normal/bomba de calor
+      else if (param_number==22) { conf.RX433enabled = server.arg(i).toInt(); } // modo normal/bomba de calor
+      else if (param_number==23) { conf.TX433enabled = server.arg(i).toInt(); } // modo normal/bomba de calor
+      else if (param_number==24) { conf.SPIenabled = server.arg(i).toInt(); } // modo normal/bomba de calor
+      else if (param_number==25) { conf.I2Cenabled = server.arg(i).toInt(); } // modo normal/bomba de calor
+      else if (param_number==26) { conf.TFTenabled = server.arg(i).toInt(); } // modo normal/bomba de calor
+      else if (param_number==27) { conf.rstper = server.arg(i).toInt(); } // período rset automatico
       }
     saveconf();
     readconf();
@@ -2212,13 +2269,32 @@ void ICACHE_FLASH_ATTR setupDevHTML()
   printcampoCB(0, conf.iddevice, 150, 166,true);
   printP(tr_f);
   
-  printP(tr);  
-  tcell(mostrarpines);
-  printP(conf.showN?th:td);
+  printP(tr,conf.showN?th:td);  
+  pt(mostrarpines);
   checkBox(1, conf.showN,false);
-  printP(conf.showN?th_f:td_f,td,td_f,td,td_f,tr_f);
+  printP(conf.showN?th_f:td_f);
 
-  printP(tr,td,t(Act));
+  printP(conf.TFTenabled?th:td,"TFT");  
+  checkBox(26, conf.TFTenabled,false);
+  printP(conf.TFTenabled?th_f:td_f);
+
+  printP(conf.RX433enabled?th:td,"RX 433");  
+  checkBox(22, conf.RX433enabled,false);
+  printP(conf.RX433enabled?th_f:td_f);
+
+  printP(conf.TX433enabled?th:td,"TX 433");  
+  checkBox(23, conf.TX433enabled,false);
+  printP(conf.TX433enabled?th_f:td_f,tr_f);
+
+  printP(tr,conf.SPIenabled?th:td,"SPI");  
+  checkBox(24, conf.SPIenabled,false);
+  printP(conf.SPIenabled?th_f:td_f);
+
+  printP(conf.I2Cenabled?th:td,"I2C");  
+  checkBox(25, conf.I2Cenabled,false);
+  printP(conf.I2Cenabled?th_f:td_f,td,td_f,td,td_f,tr_f);
+
+  printP(tr,td);
   pt(aut);
   printP(barra,t(versiont), td_f, conf.actualizaut ? th : td);
   checkBox(17, conf.actualizaut,false);
@@ -2257,8 +2333,12 @@ void ICACHE_FLASH_ATTR setupDevHTML()
   printP(tr, td, t(idioma),td_f);
   printcampoCB(20, conf.lang, PSTR("Español"), PSTR("English"),true); 
   printP(td_f,td, t(Modo),td_f);
-  printcampoCB(21, conf.modobc, PSTR("Normal"), PSTR("Bomba de calor"),true); 
+  printcampoCB(21, conf.modobc, PSTR("Normal"), PSTR("Bomba de calor"), PSTR("Radio FT-817"), true); 
   printP(td_f,tr_f);
+
+  printP(tr, td, "Reset periodico (horas)",td_f,td);
+  printcampoCB(27,conf.rstper,1,24,false); 
+  printP(td_f,td,td_f,td,td_f,tr_f);
 
   writeFooter(guardar, false);
   serversend200();
@@ -2394,21 +2474,21 @@ void ICACHE_FLASH_ATTR setupNetServHTML()
   mp=1;
   if (server.method() == HTTP_POST)
     {
-    conf.mododweet=0; conf.iftttenable=0; conf.modomyjson=0; 
-    conf.ftpenable=0; conf.mqttenable=0; conf.iottweetenable=0;
+    conf.mododweet=0; conf.iftttenabled=0; conf.modomyjson=0; 
+    conf.ftpenable=0; conf.mqttenabled=0; conf.iottweetenable=0;
     for (int i=0; i<server.args(); i++)
       {
       calcindices(i);
       if (param_number==0) { server.arg(i).toCharArray(conf.hostmyip, 30); }
       else if (param_number==1) { conf.ftpenable=server.arg(i).toInt();  } // ftp server enabled      }
-      else if (param_number==2) { conf.iftttenable=server.arg(i).toInt(); } // enable IFTTT
+      else if (param_number==2) { conf.iftttenabled=server.arg(i).toInt(); } // enable IFTTT
       else if (param_number==3) { server.arg(i).toCharArray(conf.iftttkey, 30); }
       else if (param_number==4) { conf.mododweet=server.arg(i).toInt(); }   // modo Dweet.io
       else if (param_number==5) { conf.modomyjson=server.arg(i).toInt(); if (conf.modomyjson==0) conf.idmyjsonST=0; }  // modo myjson.com
       else if (param_number==6) { conf.iottweetenable=server.arg(i).toInt();  } // iottweet enabled      }
       else if (param_number==7) { server.arg(i).toCharArray(conf.iottweetuser, 10); }
       else if (param_number==8) { server.arg(i).toCharArray(conf.iottweetkey, 15);  }
-      else if (param_number==9) { conf.mqttenable=server.arg(i).toInt(); } // enable MQTT
+      else if (param_number==9) { conf.mqttenabled=server.arg(i).toInt(); } // enable MQTT
       else if (param_number==10) { server.arg(i).toCharArray(conf.mqttserver, 40);  }
       else if (param_number>=11) { server.arg(i).toCharArray(conf.mqttpath[param_number-11], 10);  }
       }
@@ -2440,9 +2520,9 @@ void ICACHE_FLASH_ATTR setupNetServHTML()
   pc(iftttcom);
   printP(comillas, b, c(newpage), mayor);
   pc(ifttt);
-  printP(barraesp,c(Key), href_f, td_f, conf.iftttenable ? th : td);
-  checkBox(2, conf.iftttenable,false);
-  printP(conf.iftttenable?th_f:td_f);
+  printP(barraesp,c(Key), href_f, td_f, conf.iftttenabled?th:td);
+  checkBox(2, conf.iftttenabled,false);
+  printP(conf.iftttenabled?th_f:td_f);
   printColspan(2);
   if (clientremote()) pc(hidden); else printcampoC(3, conf.iftttkey, 30, true, true, false,false);
   printP(td_f, tr_f);
@@ -2505,12 +2585,12 @@ void ICACHE_FLASH_ATTR setupNetServHTML()
 
   printP(tr,td,c(mqtt),b);
   printP(c(tserver),td_f);
-  printP(conf.mqttenable==1?th:td);
-  checkBox(9, conf.mqttenable,false);
+  printP(conf.mqttenabled==1?th:td);
+  checkBox(9, conf.mqttenabled,false);
   printP(td_f);
   printColspan(2);
   printcampoC(10, conf.mqttserver, 40, true, true, false,false);
-  printP(conf.mqttenable==1?th_f:td_f,tr_f);
+  printP(conf.mqttenabled==1?th_f:td_f,tr_f);
   
   for (byte i=0;i<3;i++)
     {
@@ -2818,7 +2898,7 @@ void ICACHE_FLASH_ATTR setupDevRemHTML()
   
   if (server.method()==HTTP_POST)
     {
-    mododweettemp=0; iftttenabletemp=0; modomyjsontemp=0; iottweetenabletemp=0;
+    mododweettemp=0; iftttenabledtemp=0; modomyjsontemp=0; iottweetenabletemp=0;
     actualizauttemp=0;
     for (int i=0; i<server.args(); i++)
       {
@@ -2826,7 +2906,7 @@ void ICACHE_FLASH_ATTR setupDevRemHTML()
       if (param_number==1) { iddevicetemp = server.arg(i).toInt(); } // núm. dispositivo
       else if (param_number==2) { server.arg(i).toCharArray(aliasdevicetemp, sizeof(aliasdevicetemp)); } // aliasdevicetemp
       else if (param_number==3) { server.arg(i).toCharArray(iftttkeytemp, sizeof(iftttkeytemp)); } // iftttkeytemp
-      else if (param_number==4) { iftttenabletemp=server.arg(i).toInt(); } // iftttenabletemp
+      else if (param_number==4) { iftttenabledtemp=server.arg(i).toInt(); } // iftttenabletemp
       else if (param_number==5) { modomyjsontemp=server.arg(i).toInt(); } // enable modomodomyjsontemp
       else if (param_number==6) { mododweettemp=server.arg(i).toInt(); } // enable mododweettemp
       else if (param_number==7) { iottweetenabletemp=server.arg(i).toInt(); } // enable iottweet
@@ -2893,9 +2973,9 @@ void ICACHE_FLASH_ATTR setupDevRemHTML()
     espacioSep(4);
     printP(tr);
     printP(td, c(ifttt), barraesp);
-    printP(c(Key), td_f, iftttenabletemp ? th : td);
-    checkBox(4, iftttenabletemp,false);
-    printP(iftttenabletemp ? th_f : td_f);
+    printP(c(Key), td_f, iftttenabledtemp ? th : td);
+    checkBox(4, iftttenabledtemp,false);
+    printP(iftttenabledtemp ? th_f : td_f);
     printColspan(2);
     printcampoC(3, iftttkeytemp, 30, true, true, false,false);
     printP(td_f, tr_f, tr);
@@ -4287,7 +4367,7 @@ void initConf()
   strcpy(conf.iottweetuser,vacio);             // IoTtweet account user ID (6 digits, included zero pre-fix)
   conf.peractrem=10;                           // período de actualización automática a dispositivo maestro
   memset(conf.tipoi2cmbrem, 0, sizeof(conf.tipoi2cmbrem));
-  conf.iftttenable=0;                          // ifttt desactivado
+  conf.iftttenabled=0;                          // ifttt desactivado
   strcpy(conf.iftttkey, vacio);                // IoTtweet account user ID (6 digits, included zero pre-fix)
   memset(conf.iftttpinED,0,sizeof(conf.iftttpinED));
   memset(conf.iftttpinSD,0,sizeof(conf.iftttpinSD));
@@ -4985,6 +5065,28 @@ void ICACHE_FLASH_ATTR initHTML()
   server.on("/l9", handleState5Out);    // Salida digital 5
   server.on("/l10", handleState6Out);   // Salida digital 6
   server.on("/l11", handleState7Out);   // Salida digital 7
+
+  server.on("/gi0", handleState0Ing);     // Entrada digital gpio 0
+  server.on("/gi1", handleState1Ing);     // Entrada digital gpio 1
+  server.on("/gi2", handleState2Ing);     // Entrada digital gpio 2
+  server.on("/gi3", handleState3Ing);     // Entrada digital gpio 3
+  server.on("/gi4", handleState4Ing);     // Entrada digital gpio 4
+  server.on("/gi5", handleState5Ing);     // Entrada digital gpio 5
+  server.on("/gi6", handleState6Ing);     // Entrada digital gpio 6
+  server.on("/gi7", handleState7Ing);     // Entrada digital gpio 7
+  server.on("/gi8", handleState8Ing);     // Entrada digital gpio 8
+  server.on("/gi9", handleState9Ing);     // Entrada digital gpio 9
+
+  server.on("/go0", handleState0Outg);     // Salida digital gpio 0
+  server.on("/go1", handleState1Outg);     // Salida digital gpio 1
+  server.on("/go2", handleState2Outg);     // Salida digital gpio 2
+  server.on("/go3", handleState3Outg);     // Salida digital gpio 3
+  server.on("/go4", handleState4Outg);     // Salida digital gpio 4
+  server.on("/go5", handleState5Outg);     // Salida digital gpio 5
+  server.on("/go6", handleState6Outg);     // Salida digital gpio 6
+  server.on("/go7", handleState7Outg);     // Salida digital gpio 7
+  server.on("/go8", handleState8Outg);     // Salida digital gpio 8
+  server.on("/go9", handleState9Outg);     // Salida digital gpio 9
   
   server.on("/r0", handleStater0);
   server.on("/r1", handleStater1);
