@@ -107,13 +107,14 @@ void initDS18B20() {
 	dPrint(t(sondastemp));	dPrint(dp);
 	dPrintI(nTemp);	dPrint(crlf);	dPrint(b);	dPrint(t(Modo));	dPrint(dp);
 	dPrint((sensors0.isParasitePowerMode())?c(tparasite):c(tpower));	dPrint(crlf);
-	for(byte i=0; i<nTemp; i++)       {
-		if(sensors0.getAddress(addr1Wire[i], i))    {
-			dPrint(b);
-			for(uint8_t j=0; j<8; j++) { if(addr1Wire[i][j]<16) { dPrint(cero); } Serial.print(addr1Wire[i][j], HEX); }
-			dPrint(crlf);
-		}
-	}
+ 
+  for(byte i=0; i<nTemp; i++)       {
+    if(sensors0.getAddress(addr1Wire[i], i))    {
+      dPrint(b);
+      for(uint8_t j=0; j<8; j++) { if(addr1Wire[i][j]<16) { dPrint(cero); } Serial.print(addr1Wire[i][j], HEX); }
+      dPrint(crlf);
+    }
+  }
 }
 
 void initEntDig() { for(byte i=0; i<maxED; i++) { pinMode(edPin[i], INPUT); }  }
@@ -367,12 +368,12 @@ void handletfttouch()
     if (tft.getRotation()==3) { x=tft.width()-x; y=tft.height()-y;}
     if (conf.modobc==0)
       {
-      for (byte i=0;i<4;i++)    // cambio de página
+      for (byte i=0;i<maxtftpages;i++)    // cambio de página
         {
         if (btST[i].contains(x,y))  // botones página atrás/adelante
           {
-          if (i==0) if (tftpage>0) { tftpage--; } else { tftpage=5; }
-          if (i==3) if (tftpage<5) { tftpage++; } else { tftpage=0; }
+          if (i==0) if (tftpage>0) { tftpage--; } else { tftpage=maxtftpages; }
+          if (i==3) if (tftpage<maxtftpages) { tftpage++; } else { tftpage=0; }
           tft.fillScreen(TFT_BLACK); 
           drawTFT(); 
           }

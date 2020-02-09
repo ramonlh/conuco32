@@ -47,6 +47,23 @@ void drawTE()   // temperaturas
     }
 }
 
+void drawSO()   // sondas y códigos
+{
+  tft.setTextColor(TFT_WHITE, TFT_BLACK); tft.setTextSize(2);
+  for (byte i=0;i<maxTemp;i++)
+    {
+    tft.setTextColor(TFT_WHITE, TFT_BLACK); tft.setTextSize(2);
+    tft.drawString(letraS,0,25*i); tft.drawNumber(i, 15, 25*i);
+    if (conf.nprobe[i]<nTemp) tft.drawNumber(conf.nprobe[i], 35,25*i);
+    else tft.drawString("NA",35,25*i);
+    for (byte j=0;j<8;j++) 
+      {
+      tft.drawHex(conf.probecode[i][j], 75+(j*30), 25*i);
+      if (j<7) tft.drawString(":", 97+(j*30), 25*i);
+      }
+    }
+}
+
 void drawED()   // entradas digitales
 {
   for (byte i=0;i<4;i++)
@@ -99,10 +116,13 @@ void drawST()     // barra navegación
 {
     btST[0].initButtonUL(&tft,80*0+2,200,75,40,2,TFT_WHITE,TFT_BLACK,flecha[0],2);  btST[0].drawButton();
     btST[3].initButtonUL(&tft,80*3+2,200,75,40,2,TFT_WHITE,TFT_BLACK,flecha[3],2);  btST[3].drawButton();
-    tft.setTextColor(TFT_WHITE, TFT_BLACK);
     tft.setTextSize(2);
-    tft.drawNumber(hour(),150,220); tft.drawString(":",175,220);
-    tft.drawNumber(minute(),185,220); tft.drawString(":",208,220);
+    tft.setTextColor(WiFi.isConnected()?TFT_GREEN:TFT_RED, TFT_BLACK);
+    tft.drawString("===",110,220);
+    tft.setTextColor(TFT_WHITE, TFT_BLACK);
+    tft.drawNumber(tftpage,85,220);
+    tft.drawNumber(hour(),150,220); tft.drawString(":",172,220);
+    tft.drawNumber(minute(),180,220); tft.drawString(":",205,220);
     tft.drawNumber(second(),second()<10?228:215,220);  
 }
 
@@ -131,6 +151,7 @@ void drawTFT()
     else if (tftpage==3) { drawAN(); }
     else if (tftpage==4) { drawIP(); }
     else if (tftpage==5) { drawSET(); }
+    else if (tftpage==6) { drawSO(); }
     drawST();
     }
   else if (conf.modobc==1)  // bombacalor
@@ -141,6 +162,7 @@ void drawTFT()
     else if (tftpage==3) { drawAN(); }
     else if (tftpage==4) { drawIP(); }
     else if (tftpage==5) { drawSET(); }
+    else if (tftpage==6) { drawSO(); }
     drawST();
     }
   else if (conf.modobc==2)    // ft817

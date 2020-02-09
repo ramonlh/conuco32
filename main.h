@@ -403,11 +403,13 @@ void ICACHE_FLASH_ATTR leevaloresAN()
 void ICACHE_FLASH_ATTR leevaloresOW()
 {
   sensors0.requestTemperatures();
-  for (byte i=0; i<nTemp; i++)  {
-    int auxI=sensors0.getTempC(addr1Wire[i])*100;
-    MbR[i]=auxI;
-    MbRant[i]=MbR[i];
-    }
+  for (byte i=0; i<maxTemp; i++)  
+    if (conf.nprobe[i]<nTemp)
+      {
+      int auxI=sensors0.getTempC(conf.probecode[i])*100;
+      MbR[i]=auxI;
+      MbRant[i]=MbR[i];
+      }
 }
 
 void ICACHE_FLASH_ATTR leevaloresDHT(byte n)
@@ -1939,6 +1941,12 @@ void ICACHE_FLASH_ATTR setupioHTML()
         else if (resto==2) { conf.setpoint[indice]=server.arg(i).toFloat();  }  // valor consigna
         else if (resto==3) { conf.salsetpoint[indice]=server.arg(i).toInt(); }  // salida asociada
         else if (resto==4) { conf.accsetpoint[indice]=server.arg(i).toInt(); }  // acción consigna
+        else if (resto==5)    // número y código de sonda
+          { 
+          if (server.arg(i).toInt()==nTemp) conf.nprobe[indice]=8;
+          else conf.nprobe[indice]=server.arg(i).toInt();
+          for (byte j=0;j<8;j++) conf.probecode[indice][j]=addr1Wire[server.arg(i).toInt()][j];
+          } 
         }
       else if ((indice>=8) && (indice<=11)) // entradas digitales
         {
@@ -1983,7 +1991,6 @@ void ICACHE_FLASH_ATTR setupioHTML()
   writeHeader(false,false);
   writeMenu(3,1);
   writeForm(siohtm);
-  //Serial.print("posactio:"); Serial.println(posactio);
   printP(tr);
   tcell(descripcion); 
   ccell(gpio);
@@ -2014,9 +2021,7 @@ void ICACHE_FLASH_ATTR setupioHTML()
         cell(W0);
         pc(select_f);
         checkBox(mpi+1,(getbit8(conf.mqttsalenable,i)),true);
-
-        selectProbe(99, 0, true);
-   
+        selectProbe(mpi+5, conf.nprobe[i], true);
         printP(td);
         printcampoF(mpi+2, conf.setpoint[i], 1); // valor de consigna
         printP(td_f,td,c(Select_name),comillas);

@@ -133,7 +133,9 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 unsigned int gpiogamma[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};    // valor de alfa para cada sensor (si es preciso)
                 unsigned long contadoresgpio[maxgpiovar]={0,0,0,0,0,0,0,0,0,0};  // 16 bytes, número de veces encendido/apagado de entradas digitales
                 byte MbC8gpio[4]={0,0,0,0};                 // byte 1 y 2 para SD, byte 3 y 4 para ED
-                byte rstper=0;                    
+                byte rstper=0;   
+                byte nprobe[maxTemp]={0,0,0,0,0,0,0,0};   // estos dos valores van aparejados
+                uint8_t probecode[maxTemp][8];            // código de sonda 
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes
@@ -181,7 +183,7 @@ byte bsumatAtemp[maxEA]={0};   // 1 byte,  mostrar sumaA temp
 int valoresTemp[maxTemp]={0,0,0,0,0,0,0,0}; // 8x2, 16 bytes guarda los valores de las sondas dividido por 100
 int tiporemotetemp=8266;
 byte nTemp=0;                  // número sondas detectadas en cada puerto 1-wire
-uint8_t addr1Wire[maxTemp][8];
+uint8_t addr1Wire[maxTemp][8];  // tiene los valores conectados
 unsigned long mact1,mact2,mact10,mact60,mact3600,mact86400; 
 unsigned long tempact[maxSD];   // 8x4, 32 bytes, tiempos desde activación. Al llegar a tempdef se desactiva la salida.
 unsigned long tempdes[maxSD];   // 8x4, 32 bytes, tiempos desde desactivación. Al llegar a tempdef se activa la salida.
@@ -227,8 +229,8 @@ float offsetAtemp[maxEA]={0.0,0.0}; // 1x4 offset conversión analógicas locale
 
 byte MbC8ant[2]={0,0};           // estado anterior de SD y ED: 0:SD0, 1:SD1, 2:ED0, 3:ED1
 byte MbC8antgpio[4]={0,0,0,0};   // estado anterior de gpios configurables
-int MbR[10];                     // 0-7 Temperaturas locales, 8-9 analógica local
-int MbRant[10];                  // 0-7 Temperaturas locales, 8-9 analógica local, valores anteriore
+int MbR[10]={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};      // 0-7 Temperaturas locales, 8-9 analógica local
+int MbRant[10]={0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0};   // 0-7 Temperaturas locales, 8-9 analógica local, valores anteriore
 byte iftttchange[2]={0};         // 0-7: salidas digitales,  8-11: entradas digitales
 char idmyjsontemp[10]="";
 boolean onescenaact=false;

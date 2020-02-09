@@ -25,6 +25,7 @@
   #define maxparam 14     // número máximo parámetros LCD
   #define maxpaneles 10   // número máximo de paneles
   #define maxsensortype 30 
+  #define maxtftpages 6
   
   // 
   #define I0 36    // OK    // Inputs
