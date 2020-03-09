@@ -139,6 +139,9 @@ void initupdateserver()
     if (upload.status == UPLOAD_FILE_START) {
       Serial.setDebugOutput(true);
       Serial.printf("Update: %s\n", upload.filename.c_str());
+      clearTFT();
+    //  tft.drawString("Updating...",0,20);
+      pinMode(2,OUTPUT); tictac(2,3,100);
       if (!Update.begin()) { //start with max available size
         Update.printError(Serial);
       }
