@@ -255,11 +255,11 @@ void ICACHE_FLASH_ATTR printcampoCB(int numpar, int valact, PGM_P t0, PGM_P t1, 
 
 void printaddr1Wire(byte i)
 {
-  if (conf.nprobe[i]==0)
+  if (i==0)
     printP("No probe");
   else
-    for (uint8_t j=0;j<8;j++) { printH(conf.probecode[i][j]); } 
-}
+    for (uint8_t j=0;j<8;j++) { printH(conf.probecode[i-1][j]); } 
+  }
 
 void ICACHE_FLASH_ATTR selectProbe(int numpar, int valact, boolean printtd)
 {

@@ -1251,7 +1251,7 @@ void ICACHE_FLASH_ATTR panelHTML() {
 
   // ENTRADAS DIGITALES
   for (byte i=0; i<maxED; i++)
-    if (getbit8(conf.bshowbypanel[auxI], i+10))
+    if (getbit8(conf.bshowbypanel[auxI], i+8))
       {
       printP(menor, letrat, letrar, b);
       printP(c(tid), ig, comilla, letral); 
@@ -1951,7 +1951,7 @@ void ICACHE_FLASH_ATTR setupioHTML()
         else if (resto==5)    // número y código de sonda
           { 
           conf.nprobe[indice]=server.arg(i).toInt();
-          for (byte j=0;j<8;j++) conf.probecode[indice][j]=addr1Wire[server.arg(i).toInt()][j];
+          for (byte j=0;j<8;j++) conf.probecode[indice][j]=addr1Wire[server.arg(i).toInt()-1][j];
           } 
         }
       else if ((indice>=8) && (indice<=11)) // entradas digitales
@@ -2062,7 +2062,7 @@ void ICACHE_FLASH_ATTR setupioHTML()
         cell(W0);
         cell(getbit8(conf.mqttsalenable,i)?symyes:symnot);
         printP(td); 
-        printaddr1Wire(i);
+        printaddr1Wire(conf.nprobe[i]);
         printP(td_f);
         cell(conf.setpoint[i],2);
         printP(td); 

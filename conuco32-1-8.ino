@@ -5,7 +5,7 @@
 #define debug true
 #define debugwifi false
 
-#include "commontexts.h"              // setupio
+#include "commontexts.h"              
 
 #include <IoTtweetESP32.h>            // Localthttps://twitter.com/home
 #include "defines.h"                  // include
