@@ -117,7 +117,7 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 char instname[10]="INSTAL";       // nombre de la instalación
                 byte mqttgpioenable[3]={0,0,0};   // 
                 unsigned int LIBRE2[19]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};  // LIBRES
-                byte modofi=0;  // normal=0, bomba de calor = 1, radio FT817=2
+                byte modofi=0;  // normal=0, bomba de calor = 1
                 byte ngpio[30]={26,26,26,26,26,26,26,26,36,39,34,35,17,23,34,27,19,5,18,16,0,0,0,0,0,0,0,0,0};  // pin para cada señal 8x1-wire,4xDI,8xDO, 6 libres)
                 byte tiporemote[maxdevrem]={0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0};    // 16 bytes, tipo de cada dispositivo remoto. 0:Conuco8266, 1:conuco32
                 byte bshowbypanel[maxpaneles][7]; // 70 bytes, tabla para asignar señales a paneles
@@ -137,6 +137,47 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 byte nprobe[maxTemp]={0,0,0,0,0,0,0,0};   // estos dos valores van aparejados
                 uint8_t probecode[maxTemp][8];            // código de sonda 
                 byte xxxxxx[8]={0,0,0,0,0,0,0,0};
+                // parámetros Bomba Calor
+                // Para mi uso
+                byte Cal=0;   // Calefacción activa
+                byte Ref=0;   // Refrigeración activa
+                byte ACS=0;   // ACS activo
+                // Nivel usuario
+                byte SAI=0;   // 0:invierno,  1: verano
+                // Nivel 1
+                int T[4]={1,15,33,28};  // // -20/+20, -20/+20,  +20/+60, +20/+60
+                int CC=5;     // de 1 a 15, temporización compresor en minutos
+                int CCC=5;    // de 0 a 15, temporización bomba captador en minutos
+                int FRO=7;   // de +7 a +25, consigna Frío
+                int ECS=55;   // de +40 a +65, consigna ACS
+                int PIS=28;   // de +25 a +35, consigna Piscina
+                int RES=15;   // de -10 a +25, consigna Resistencia
+                int Cr1=10;   // temporización resistencia en minutos
+                int Cr2=5;    // tiempo en horas continuo compresor antes de activar resistencia
+                int AoC=33;   // de +25 a +45, consigna vávula mezcladora calefacción
+                int AoF=33;   // de +5 a +25, consigna vávula mezcladora frío
+                // Nivel 2
+                int HYC=2;    // de 1 a 10, histéresis calefacción
+                int HYE=2;    // de 1 a 10, histéresis ACS
+                int HYF=2;    // de 1 a 10, histéresis Frío
+                int HYr=1;    // de 1 a 10, histéresis Resistencia
+                int bPC=4;    // banda proporcional 0..10 válvula mezcladora, calor
+                int bPF=2;    // banda proporcional 0..10 válvula mezcladora, frío
+                int AH2=65;   // de +40 a +65, límite ida calefacción, sonda 2
+                int AH4=55;   // de -15 a +65, alarma, sonda 4
+                int Ab4=5;    // de -15 a +45, alarma capa reática o retorno captador
+                int tLP=55;   // de +35 a +45, límite ida en modo piscina
+                int So[4]={0,0,0,0};  // compensación sondas
+                // Nivel 3
+                byte ECO=0;   // modo ECO
+                int TOF=1;    // de 1 a 24 horas, tiempo parada bomba modo ECO
+                int TON=15;   // de a 15 minutos, tiempo arranque bomba modo ECO
+                byte Pro=0;   // modo progresivo
+                int Tin=10;   // de 10 a 20º, temperatura inicial
+                int Tfi=30;   // de 25 a 40º, temperatura final
+                int Nbh=240;  // número de horas
+                int TL2=65;   // temperatura límite salida agua
+                byte APP=0;   // Modo apoyo
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes
@@ -312,7 +353,31 @@ int testvalue=0;
 unsigned long tini=0;
 String sinput="";
 ////////////////////////////////////////
-const byte maxbt817=2;
 
 ///////////////// variables bomba de calor
+#define idTerm 0
+#define idACS 1
+#define idBP 2
+#define idHP 3
+#define idFrio 4
+// Valores leídos de las sondas
+byte idbc[5]={0,0,0,0,0}; // Termostato,ACS,BP,HP,Frio
+char idText[5][15]={"Termostato","ACS","BP","HP","Frio"};
+byte idxgpio[5]={0,1,7,8,9};  //0:Termostato, 1:ACS, 7:BP, 8:HP, 9:Frio
+int Ai[4]={0,0,0,0};    // Retorno, Ida, Exterior, Auxiliar
+char AiText[4][10]={"Ret","Ida","Ext","Aux"};
+int consignaAct=0;
+
+boolean ACSisON=false;
+boolean CALisON=false;
+boolean REFisON=false;
+
+boolean demACS=false;
+boolean demCAL=false;
+boolean demREF=false;
+
+
+byte tipoalarma=0;
+byte estalarma[10]={0,0,0,0,0,0,0,0,0,0};   // 0:estado inicial, 1:pendiente reconocer, 2:reconocida
+char textalarma[10][10]={"None","Ai1","Ai2","Ai3","Ai4","BP","HP","AH2","AH4","AB4"};
 

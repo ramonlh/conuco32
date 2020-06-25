@@ -255,9 +255,6 @@ void ICACHE_FLASH_ATTR printIP(long valor, const  char *texto) { printI(valor); 
 void ICACHE_FLASH_ATTR printPiP(const char *texto1, int num, const char *texto2)
   { printP(texto1); printI(num); printP(texto2);}
 
-
-
-
 bool ICACHE_FLASH_ATTR autOK()
 {
   return true;      // provisional
@@ -321,7 +318,7 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
   else if (conf.modofi==1)
     printOpc(false, (opcprin==1), c(panel), panelhtm); // Bomba de calor
   printOpc(false, (opcprin==3), t(configuracion), sdhtm); // CONFIGURACIÓN
-  if (conf.modofi==0) printOpc(false, (opcprin==2), t(programas), sprghtm); // Programas
+  printOpc(false, (opcprin==2), t(programas), sprghtm); // Programas
   printOpc(false, (opcprin==4), t(sistema), espsyshtm); // Sistema
 
   if (conf.usepassDev)
@@ -339,7 +336,7 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
   printP(tmenu, mayor, tr);  // formato menú
   if (opcprin == 1) // PANELES
     {
-    if (conf.modofi!=1) 
+    if (conf.modofi==0) // modo normal
       {
       for (byte i=0; i<maxpaneles; i++)
         if (getbit8(conf.bshowpanel, i))
@@ -348,12 +345,12 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
     }
   else if (opcprin==2) // PROGRAMACIÓN
     {
-    if (conf.modofi!=1) printOpc(false, opcsec==5, t(programas), sprghtm);
-    if (conf.modofi!=1) printOpc(false, opcsec==1, t(semanal), ssehtm);
-    if (conf.modofi!=1) printOpc(false, opcsec==2, t(condiciones), svhtm);
-    if (conf.modofi!=1) printOpc(false, opcsec==3, t(fecha), sfhtm);
-    if (conf.modofi!=1) printOpc(false, opcsec==4, t(escenas), seschtm);
-    if (conf.modofi!=1) printOpc(false, opcsec==7, t(webcalls), swchtm);
+    if (conf.modofi==0) printOpc(false, opcsec==5, t(programas), sprghtm);
+    if (conf.modofi==0) printOpc(false, opcsec==1, t(semanal), ssehtm);
+    if (conf.modofi==0) printOpc(false, opcsec==2, t(condiciones), svhtm);
+    if (conf.modofi==0) printOpc(false, opcsec==3, t(fecha), sfhtm);
+    if (conf.modofi==0) printOpc(false, opcsec==4, t(escenas), seschtm);
+    if (conf.modofi==0) printOpc(false, opcsec==7, t(webcalls), swchtm);
     }
   else if (opcprin==3) // CONFIGURACIÓN
     {
@@ -370,7 +367,7 @@ void ICACHE_FLASH_ATTR writeMenu(byte opcprin, byte opcsec)
   else if (opcprin==4) // SISTEMA
     {
     printOpc(false, opcsec==4, t(statust), espsyshtm);
-    if (conf.modofi!=1) printOpc(false, opcsec==3, t(files), fileshtm);
+    if (conf.modofi==0) printOpc(false, opcsec==3, t(files), fileshtm);
     printOpc(false, opcsec==5, t(seguridad), sshtm);
     printOpc(false, opcsec==1, t(actualizar), suhtm);
     printOpc(false, opcsec==2, treset, rshtm);
@@ -410,7 +407,8 @@ void ICACHE_FLASH_ATTR printtiempo(unsigned long segundos)
 
 boolean gpiovis(byte i)
   {
-  boolean auxgpiovis=true;
+  boolean auxgpiovis=false;
+#ifdef PCBV5
   if      (i==0) auxgpiovis=(conf.TX433enabled==0);                            // GPIO 02
   else if (i==1) auxgpiovis=(conf.RX433enabled==0);                            // GPIO 04
   else if (i==2) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 12
@@ -420,6 +418,30 @@ boolean gpiovis(byte i)
   else if (i==6) auxgpiovis=((conf.I2Cenabled==0) && (conf.TFTenabled==0));    // GPIO 21
   else if (i==7) auxgpiovis=((conf.I2Cenabled==0) && (conf.SERIAL2enabled==0));// GPIO 22
   else if (i==8) auxgpiovis=(conf.SERIAL2enabled==0) ;                         // GPIO 32
-  else if (i==9) auxgpiovis=false;   // no se puede usar  con facilidad        // GPIO 33
+  else if (i==9) auxgpiovis=true;                                              // GPIO 33
+#elif defined PCBV4
+  if      (i==0) auxgpiovis=(conf.TX433enabled==0);                            // GPIO 02
+  else if (i==1) auxgpiovis=(conf.RX433enabled==0);                            // GPIO 04
+  else if (i==2) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 12
+  else if (i==3) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 13
+  else if (i==4) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 14
+  else if (i==5) auxgpiovis=false;                                             // GPIO 15
+  else if (i==6) auxgpiovis=((conf.I2Cenabled==0) && (conf.TFTenabled==0));    // GPIO 21
+  else if (i==7) auxgpiovis=((conf.I2Cenabled==0) && (conf.SERIAL2enabled==0));// GPIO 22
+  else if (i==8) auxgpiovis=(conf.SERIAL2enabled==0) ;                         // GPIO 32
+  else if (i==9) auxgpiovis=true;                                              // GPIO 33
+   //  listgpiovar[maxgpiovar]={2,4,12,13,14,15,21,22,32,33};
+#elif defined PCBTEST
+  if      (i==0) auxgpiovis=(conf.TX433enabled==0);                            // GPIO 02
+  else if (i==1) auxgpiovis=(conf.RX433enabled==0);                            // GPIO 04
+  else if (i==2) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 12
+  else if (i==3) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 13
+  else if (i==4) auxgpiovis=((conf.SPIenabled==0) && (conf.TFTenabled==0));    // GPIO 14
+  else if (i==5) auxgpiovis=false;                                             // GPIO 15
+  else if (i==6) auxgpiovis=((conf.I2Cenabled==0) && (conf.TFTenabled==0));    // GPIO 21
+  else if (i==7) auxgpiovis=((conf.I2Cenabled==0) && (conf.SERIAL2enabled==0));// GPIO 22
+  else if (i==8) auxgpiovis=(conf.SERIAL2enabled==0) ;                         // GPIO 32
+  else if (i==9) auxgpiovis=true;                                              // GPIO 33
+#endif
   return auxgpiovis;   
   }

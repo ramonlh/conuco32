@@ -51,6 +51,52 @@
   #define RX433 4 
   #define TX433 2     
 
+/** ----------------------------------------------------------------
+// definido en fichero User_Setup.h de la librería TFT_eSPI.h  
+#ifdef PCBV5
+  #define TFT_MISO 12 // pendiente probar
+  #define TFT_MOSI 13
+  #define TFT_SCLK 14
+  #define TFT_CS   15 // Chip select control pin
+  #define TFT_DC   21 // Data Command control pin    TENGO QUE CAMBIARLO AL GPIO 2
+  #define TFT_RST  23 // Reset pin (could connect to RST pin)
+  #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen
+#elif defined PCBV4
+  #define TFT_RST  -1 // Reset pin (connected to RST pin)
+  #define TFT_DC   21     // 
+  #define TFT_MISO 12
+  #define TFT_MOSI 13
+  #define TFT_SCLK 14
+  #define TFT_CS   15 // Chip select control pin
+  #define TOUCH_CS -1 // Chip select pin (T_CS) of touch screen
+#elif defined PCBTEST
+  #define TFT_RST  -1 // Reset pin (connected to RST pin)
+  #define TFT_DC   21     // 
+  #define TFT_MISO 12
+  #define TFT_MOSI 13
+  #define TFT_SCLK 14
+  #define TFT_CS   22 // Chip select control pin
+  #define TOUCH_CS -1 // Chip select pin (T_CS) of touch screen
+#elif defined BITX
+  #define TFT_MISO 12
+  #define TFT_MOSI 13
+  #define TFT_SCLK 14
+  #define TFT_CS   15 // Chip select control pin
+  #define TFT_DC    2 // Data Command control pin   TENGO QUE CAMBIARLO AL GPIO 2
+  #define TFT_RST  -1 // Reset pin (could connect to RST pin)
+  #define TOUCH_CS -1 // Chip select pin (T_CS) of touch screen
+#else
+  #define TFT_MISO 12
+  #define TFT_MOSI 13
+  #define TFT_SCLK 14
+  #define TFT_CS   15 // Chip select control pin
+  #define TFT_DC   21 // Data Command control pin   TENGO QUE CAMBIARLO AL GPIO 2
+  #define TFT_RST  -1 // Reset pin (could connect to RST pin)zd34qed                                               
+  #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen
+#endif
+
+--------------------------------------------------------------------**/
+
 ////////////////////////////////
 #define nEVE 8          // número de eventos
 #define despIFTTT 252   // valor para disparar IFTTT, 252

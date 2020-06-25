@@ -387,6 +387,17 @@ void ICACHE_FLASH_ATTR leevaloresDIG()
       }
     }
   MbC8antgpio[2]=conf.MbC8gpio[2];  MbC8antgpio[3]=conf.MbC8gpio[3];
+  if (conf.modofi==1)
+    {
+    for (byte i=0;i<5;i++)
+      {
+#ifdef DEBUG
+      // nada
+#else       
+      idbc[i]=getbit8(conf.MbC8gpio,idxgpio[i]+16);
+#endif
+      }
+    }
 }
 
 void ICACHE_FLASH_ATTR leevaloresGPIO() 
@@ -464,6 +475,8 @@ void ICACHE_FLASH_ATTR leevaloresOW()
       int auxI=sensors0.getTempC(conf.probecode[i])*100;
       MbR[i]=auxI;
       MbRant[i]=MbR[i];
+      if ((conf.modofi==1) && (i<4))
+        Ai[i]=round(float(MbR[i])/100);
       }
     }
 }
@@ -964,50 +977,79 @@ void ICACHE_FLASH_ATTR termostatoHTML() {
 
 void HtmlGetStateTemp(byte tipo, byte i)
 {
-  printP(td);
-  if (tipo==0)
+  if (conf.modofi==1)
     {
-    printP(b, readdescr(filedesclocal,i,20), td_f, td);
-    printF(MbR[i]*0.01,1);
+    printP(td,b, AiText[i], td_f, td);
+    printI(Ai[i]);
     printP(b, celsius, td_f);
     }
-  else if (tipo==1)         // PT1000 o NTC
+  else
     {
-    if (conf.gpiosensortype[i]==4)    // DHT
-        {
-        printP(b, readdescr(filedescgpio,i,20), td_f, td);
-        printF(dhtdata[i][0],2);    // temperatura
-        printP(b,celsius,barra);
-        printF(dhtdata[i][1],2);    // humedad
-        printP(b,porcen,td_f);
-        }
-      else if ((conf.gpiosensortype[i]==5) || (conf.gpiosensortype[i]==6))         // PT1000 o NTC
-        {
-        printP(b, readdescr(filedescgpio,i,20), td_f, td);
-        printF(MbRgpio[i]+conf.gpiogamma[i],2);
-        printP(b, celsius, td_f);
-        sumMbRgpio[i]=0; avrcount[i]=0;
-        }
+    if (tipo==0)
+      {
+      printP(td,b, readdescr(filedesclocal,i,20), td_f, td);
+      printF(MbR[i]*0.01,1);
+      printP(b, celsius, td_f);
+      }
+    else if (tipo==1)         // PT1000 o NTC
+      {
+      if (conf.gpiosensortype[i]==4)    // DHT
+          {
+          printP(td,b, readdescr(filedescgpio,i,20), td_f, td);
+          printF(dhtdata[i][0],2);    // temperatura
+          printP(b,celsius,barra);
+          printF(dhtdata[i][1],2);    // humedad
+          printP(b,porcen,td_f);
+          }
+        else if ((conf.gpiosensortype[i]==5) || (conf.gpiosensortype[i]==6))   // PT1000 o NTC
+          {
+          printP(td,b, readdescr(filedescgpio,i,20), td_f, td);
+          printF(MbRgpio[i]+conf.gpiogamma[i],2);
+          printP(b, celsius, td_f);
+          sumMbRgpio[i]=0; avrcount[i]=0;
+          }
+      }
     }
 }
 
 void HtmlGetStateGPIO(byte i)
 {
-  printP(td);
-  printP(b, readdescr(filedescgpio,i,20), td_f, td);
-  if (conf.gpiosensortype[i]==2)   // ADC estándar
+  if (conf.modofi==1) 
     {
-    printF(0.01*(MbRgpio[i]*MbRgpio[i]*conf.gpioalfa[i]+MbRgpio[i]*conf.gpiobeta[i]+conf.gpiogamma[i]),2);
-    }
-  else if (conf.gpiosensortype[i]==7)   // ACS712 corriente
-    {
-    printF((MbRgpio[i]+conf.gpiogamma[i]),2);
+    printP(td);
+    printP(b, readdescr(filedescgpio,i,20), td_f, td);
+    if (conf.gpiosensortype[i]==2)   // ADC estándar
+      {
+      printF(0.01*(MbRgpio[i]*MbRgpio[i]*conf.gpioalfa[i]+MbRgpio[i]*conf.gpiobeta[i]+conf.gpiogamma[i]),2);
+      }
+    else if (conf.gpiosensortype[i]==7)   // ACS712 corriente
+      {
+      printF((MbRgpio[i]+conf.gpiogamma[i]),2);
+      }
+    else
+      {
+      printF(0.01*(MbRgpio[i]*MbRgpio[i]*conf.gpioalfa[i]+MbRgpio[i]*conf.gpiobeta[i]+conf.gpiogamma[i]),2);
+      }
+    printP(b, td_f);
     }
   else
     {
-    printF(0.01*(MbRgpio[i]*MbRgpio[i]*conf.gpioalfa[i]+MbRgpio[i]*conf.gpiobeta[i]+conf.gpiogamma[i]),2);
+    printP(td);
+    printP(b, readdescr(filedescgpio,i,20), td_f, td);
+    if (conf.gpiosensortype[i]==2)   // ADC estándar
+      {
+      printF(0.01*(MbRgpio[i]*MbRgpio[i]*conf.gpioalfa[i]+MbRgpio[i]*conf.gpiobeta[i]+conf.gpiogamma[i]),2);
+      }
+    else if (conf.gpiosensortype[i]==7)   // ACS712 corriente
+      {
+      printF((MbRgpio[i]+conf.gpiogamma[i]),2);
+      }
+    else
+      {
+      printF(0.01*(MbRgpio[i]*MbRgpio[i]*conf.gpioalfa[i]+MbRgpio[i]*conf.gpiobeta[i]+conf.gpiogamma[i]),2);
+      }
+    printP(b, td_f);
     }
-  printP(b, td_f);
 }
 
 void HtmlGetStateIn(byte tipo, byte ind)    // tipos: 0=ED, 1=GPIO como ED
@@ -1160,7 +1202,7 @@ void voicecommandHTML()
   serversend200();
 }
 
-void ICACHE_FLASH_ATTR panelHTML() {
+void ICACHE_FLASH_ATTR panelnoHTML() {
   printremote();
   boolean conectado = (autOK());
   msg=vacio;
@@ -1403,12 +1445,101 @@ void ICACHE_FLASH_ATTR panelHTML() {
 }
 
 
+void ICACHE_FLASH_ATTR panelbcHTML() {
+  printremote();
+  boolean conectado = (autOK());
+  msg=vacio;
+  if (server.method()==HTTP_POST) return; 
+  writeHeader(false,true);
+  byte auxI=server.arg(0).toInt();
+  panelact=auxI;
+  writeMenu(1, auxI);
+  printP(menor, table);
+  printP(b, c(tclass), ig, tpanel, mayor, tr);
+  printColspan(2);
+  printP(readdescr(filezonas, auxI, 20), td_f, tr_f);
+
+  /////////////  CONTENIDO   ///////////
+
+  // TEMPERATURAS Ai1 .. Ai4
+  for (byte i=0; i<4; i++)
+    {
+    printP(menor,letrat,letrar,b);
+    printP(c(tid),ig,comilla,letrat,letrae);
+    printI(i);
+    printP(comilla,mayor);
+    HtmlGetStateTemp(0,i);
+    printP(tr_f);
+    }
+
+     // ENTRADAS DIGITALES
+/** for (byte i=0; i<4; i++)
+    {
+    printP(menor, letrat, letrar, b);
+    printP(c(tid), ig, comilla, letral); 
+    printI(i);
+    printP(comilla, mayor);
+    HtmlGetStateIn(0,i);
+    printP(tr_f);
+    }**/
+
+for (byte i=0;i<maxgpiovar;i++)    // GPIOs
+     {
+      if (gpiovis(i))
+        {
+        printP(tr);
+        if (conf.gpiosensortype[i]==0)    // input
+          {
+          printP(menor, letrat, letrar, b);
+          printP(c(tid), ig, comilla, letrag, letrai); 
+          printI(i);      // número de la etiqueta "#ln"
+          printP(comilla, mayor);
+          HtmlGetStateIn(1,i);
+          printP(tr_f);
+          }
+        }
+     }
+
+  // SALIDAS DIGITALES
+  if (conectado)
+    {
+    for (byte i=0;i<maxSD;i++)
+      if (getbit8(conf.bshowbypanel[auxI], i+12))
+        {
+        printP(menor, "tr", b);
+        printP(c(tid), ig, comilla, letral); 
+        printI(i+4);
+        printP(comilla, mayor);
+        HtmlGetStateOut(0,i);
+        printP(tr_f);
+        }
+    }
+
+
+  // final
+  printP(menor,letrat,letrar,b,c(tid));
+  printP(ig,comilla,letrat,letrat,comilla,mayor);
+  HtmlGetStateTime();
+  printP(tr_f, menor, barra, table, mayor);
+  printP(c(body_f), menor, barra,thtml, mayor);
+  serversend200();
+}
+
+void ICACHE_FLASH_ATTR panelHTML() 
+{
+  if (conf.modofi==0)
+    {
+    if (conf.modoterm==0) panelnoHTML();  else termostatoHTML(); 
+    }
+  else
+    panelbcHTML();
+}  
+
 void ICACHE_FLASH_ATTR indexHTML() 
   {
   if (conf.modofi==0)
     { if (conf.modoterm==0) panelHTML();  else termostatoHTML();   }
-  else if (conf.modofi==1) panelHTML(); 
-  else if (conf.modofi==2) panelHTML();
+  else if (conf.modofi==1) panelbcHTML(); 
   }
 
 void ICACHE_FLASH_ATTR AddOri(byte numori)
@@ -2350,13 +2481,176 @@ void ICACHE_FLASH_ATTR setupDevHTML()
   printP(tr, td, t(idioma),td_f);
   printcampoCB(20, conf.lang, PSTR("Español"), PSTR("English"),true); 
   printP(td_f,td, t(Modo),td_f);
-  printcampoCB(21, conf.modofi, PSTR("Normal"), PSTR("Bomba de calor"), PSTR("Radio FT-817"), true); 
+  printcampoCB(21, conf.modofi, PSTR("Normal"), PSTR("Bomba de calor"), true); 
   printP(td_f,tr_f);
 
   printP(tr, td, "Reset periodico (horas)",td_f,td);
   printcampoCB(27,conf.rstper,1,24,false); 
   printP(td_f,td,td_f,td,td_f,tr_f);
 
+  writeFooter(guardar, false);
+  serversend200();
+}
+
+void ICACHE_FLASH_ATTR setupbcHTML()
+{
+  printremote();
+  if (!autOK()) { sendOther(loghtm,-1); return; }
+  msg=vacio;
+  mp=1;
+  if (server.method()==HTTP_POST)
+    {
+    conf.SAI=0; conf.Cal=0; conf.Ref=0; conf.ACS=0; 
+    conf.APP=0; conf.Pro=0; conf.ECO=0; conf.APP=0; 
+    for (int i=0; i<server.args(); i++)
+      {
+      calcindices(i);
+      if      (param_number==0) { conf.SAI=server.arg(i).toInt(); }  // Verano/Invierno
+      else if (param_number==1) { conf.Cal=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==2) { conf.Ref=server.arg(i).toInt();  } // Refrigeración
+      else if (param_number==3) { conf.ACS=server.arg(i).toInt();  } // ACS
+      else if ((param_number>=4)&&(param_number<=7))
+        { conf.T[indice] = server.arg(i).toInt(); } // parámetros T1..T4
+      else if (param_number==8) { conf.CC = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==9) { conf.CCC = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==10) { conf.FRO = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==11) { conf.ECS = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==12) { conf.PIS = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==13) { conf.RES = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==14) { conf.Cr1 = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==15) { conf.Cr2 = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==16) { conf.AoC = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==17) { conf.AoF = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==18) { conf.HYC = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==19) { conf.HYE = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==20) { conf.HYF = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==21) { conf.HYr = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==22) { conf.bPC = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==23) { conf.bPF = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==24) { conf.AH2 = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==25) { conf.AH4 = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==26) { conf.Ab4 = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==27) { conf.tLP = server.arg(i).toInt(); } // seg. desact. prog.
+      else if (param_number==28) { conf.ECO=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==29) { conf.TOF=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==30) { conf.TON=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==31) { conf.Pro=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==32) { conf.Tin=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==33) { conf.Tfi=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==34) { conf.Nbh=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==35) { conf.TL2=server.arg(i).toInt(); }  // Calefacción
+      else if (param_number==36) { conf.APP=server.arg(i).toInt(); }  // Calefacción
+      }
+    if (conf.SAI==0)    // invierno
+      { conf.Ref=0; }     // frío OFF
+    else
+      { conf.Cal=0; }     // Calefacción OFF
+    saveconf();
+    readconf();
+    sendOther(sbhtm,-1);
+    return;
+    }
+
+  writeHeader(false,false);
+  writeMenu(3, 12);
+  writeForm(sbhtm);
+//////////////////////////////////
+  printP(tr,conf.SAI==1?th:td,conf.SAI==0?"Invierno (SAI)":"Verano (SAI)");  
+  printP(conf.SAI==1?th_f:td_f,conf.SAI==1?th:td);  
+  checkBox(0, conf.SAI==1, false);
+  printP(conf.SAI==1?th_f:td_f,tr_f);
+
+  printP(tr,conf.Cal==1?th:td,"Calefaccion");  
+  printP(conf.Cal==1?th_f:td_f,conf.Cal==1?th:td);  
+  checkBox(1, conf.Cal==1,false);
+  printP(conf.Cal==1?th_f:td_f,tr_f);
+  
+  printP(tr,conf.Ref==1?th:td,"Refrigeracion");  
+  printP(conf.Ref==1?th_f:td_f,conf.Ref==1?th:td);  
+  checkBox(2, conf.Ref==1,false);
+  printP(conf.Ref==1?th_f:td_f,tr_f);
+
+  printP(tr,conf.ACS==1?th:td,"ACS");  
+  printP(conf.ACS==1?th_f:td_f,conf.ACS==1?th:td);  
+  checkBox(3, conf.ACS==1,false);
+  printP(conf.ACS==1?th_f:td_f,tr_f);
+
+  printP(tr,td,"Parametros T1/T2/T3/T4",td_f,td);
+  for (byte i=0; i<4;i++) { printcampoI(4+i, conf.T[i], 5, true,false); if (i<3) printP(barra); }
+  printP(td_f,tr_f);
+
+  printP(tr, td,"Temporizacion CC/CCC",td_f,td);
+  printcampoI(8, conf.CC, 5, true,false); printP("minutos ", barra); 
+  printcampoI(9, conf.CCC, 5, true,false);printP("minutos");  
+  printP(td_f,tr_f);
+
+  printP(tr, td,"Consigna Frio / ACS C (FRO/ECS)",td_f,td);
+  printcampoI(10, conf.FRO, 5, true,false); printP(barra);
+  printcampoI(11, conf.ECS, 5, true,false); 
+  printP(td_f,tr_f);
+  printP(tr, td,"Consigna Piscina / Resistencia (PIS/RES)",td_f,td);
+  printcampoI(12, conf.PIS, 5, true,false); printP(barra);
+  printcampoI(13, conf.RES, 5, true,false); 
+  printP(td_f,tr_f);
+  printP(tr, td,"Tempor. Resistencia / T. minimo (Cr1/Cr2)",td_f,td);
+  printcampoI(14, conf.Cr1, 5, true,false); printP("minutos ",barra);
+  printcampoI(15, conf.Cr2, 5, true,false); printP("horas"); 
+  printP(td_f,tr_f);
+  printP(tr, td,"Consigna mezcladora calor / frio (AoC/AoF)",td_f,td);
+  printcampoI(16, conf.AoC, 5, true,false); printP(barra);
+  printcampoI(17, conf.AoF, 5, true,false); 
+  printP(td_f,tr_f);
+  printP(tr, td,"Banda proporcional calor / frio (bPC(bPF)",td_f,td);
+  printcampoI(22, conf.bPC, 5, true,false); printP(barra);
+  printcampoI(23, conf.bPF, 5, true,false); 
+  printP(td_f,tr_f);
+
+  printP(tr, td,"Histeresis HYC/HYE/HYF/HYr",td_f,td);
+  printcampoI(18, conf.HYC, 5, true,false); printP(barra);
+  printcampoI(19, conf.HYE, 5, true,false); printP(barra); 
+  printcampoI(20, conf.HYF, 5, true,false); printP(barra);
+  printcampoI(21, conf.HYr, 5, true,false); 
+  printP(td_f,tr_f);
+
+  printP(tr, td,"Limite Ida / Sonda 4 (AH2/Ab4)",td_f,td);
+  printcampoI(24, conf.AH2, 5, true,false); printP(barra);
+  printcampoI(25, conf.AH4, 5, true,false); 
+  printP(td_f,tr_f);
+  printP(tr, td,"Limite capa freatica / piscina (Ab4/tLP)",td_f,td);
+  printcampoI(26, conf.Ab4, 5, true,false); printP(barra);
+  printcampoI(27, conf.tLP, 5, true,false); 
+  printP(td_f,tr_f);
+
+  printP(tr,conf.ECO==1?th:td,"Modo ECO");  
+  printP(conf.ECO==1?th_f:td_f,conf.ECO==1?th:td);  
+  checkBox(28, conf.ECO==1, false);
+  printP(conf.ECO==1?th_f:td_f,tr_f);
+
+  printP(tr, td,"Tiempo parada/arranque bomba TOF(h)/TON(min)",td_f,td);
+  printcampoI(29, conf.TOF, 5, true,false); printP("horas", barra);
+  printcampoI(30, conf.TON, 5, true,false); printP("minutos");
+  printP(td_f,tr_f);
+
+  printP(tr,conf.Pro==1?th:td,"Modo progresivo (Pro)");  
+  printP(conf.Pro==1?th_f:td_f,conf.Pro==1?th:td);  
+  checkBox(31, conf.Pro==1, false);
+  printP(conf.Pro==1?th_f:td_f,tr_f);
+  
+  printP(tr, td,"Temperatura inicial/final (Tin/Tfi)",td_f,td);
+  printcampoI(32, conf.Tin, 5, true,false); printP(barra);
+  printcampoI(33, conf.Tfi, 5, true,false); 
+  printP(td_f,tr_f);
+
+  printP(tr, td,"Numero de horas / Temp. limite (Nbh/TL2)",td_f,td);
+  printcampoI(34, conf.Nbh, 5, true,false); printP(barra);
+  printcampoI(35, conf.TL2, 5, true,false); 
+  printP(tr_f);
+  printP(tr,conf.APP==1?th:td,"Modo apoyo (APP)");  
+  printP(conf.APP==1?th_f:td_f,conf.APP==1?th:td);  
+  checkBox(36, conf.APP==1, false);
+  printP(conf.APP==1?th_f:td_f,tr_f);
+
+//////////////////////////////////
   writeFooter(guardar, false);
   serversend200();
 }
@@ -5056,9 +5350,11 @@ void ICACHE_FLASH_ATTR initHTML()
   server.on("/on", onCmd);
   server.on("/of", offCmd);
   server.on("/p", panelHTML);
+  server.on("/pbc", panelbcHTML);
   server.on("/rj", rjsonHTML);
   server.on("/rjc", rjsonconfHTML);
   server.on("/rf", setuprfHTML);
+  server.on("/sb", setupbcHTML);
   server.on("/sbp", setupbyPanelHTML);
   server.on("/sc", scanapHTML);
   server.on("/sd", setupDevHTML);
