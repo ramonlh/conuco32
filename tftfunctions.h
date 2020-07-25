@@ -349,10 +349,10 @@ void displayValBC()
 void displayAlarma()
 {
   tft.setTextSize(3); tft.setTextColor(TFT_ORANGE, TFT_BLACK);  
-  if (tipoalarma>0)
+  if (tipoalarma1<9)
     {
     tft.drawString("Alarma",70,120);
-    tft.drawString(textalarma[tipoalarma],190,120);
+    tft.drawString(textalarma[tipoalarma1],190,120);
     }
   else
     tft.drawString("          ",70,120);

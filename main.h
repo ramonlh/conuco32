@@ -791,7 +791,7 @@ void procesaeventos()
         ((conf.actPrg[6]) && (getbit8(conf.bPRGeve[i], 6))) ||
         ((conf.actPrg[7]) && (getbit8(conf.bPRGeve[i], 7))) ) // si algún programa activo en la condición
       {
-      if ((conf.condact[i]>=10) && (conf.condact[i]<=21))  // activadora entrada o salida digital (10-21)
+      if ((conf.condact[i]>=8) && (conf.condact[i]<=20))  // activadora entrada o salida digital (10-21)
         {
         boolean cumple=false;
         if (conf.condact[i]<=13) cumple=(getbit8(conf.MbC8, conf.condact[i]+10)==conf.condvalD[i]);
@@ -840,13 +840,14 @@ void procesaeventos()
           }     // fin no CUMPLE
         }   // fin activadora digital Local
 ////////************************************************************///////////        
-      else     // activadora sonda o analógica (0..9)
+      else     // activadora sonda  (0..7)
         {
-        float vact;
-        if (conf.condact[i]<=7) vact = float(MbR[conf.condact[i]])/100;  // temperaturas locales
-        else if (conf.condact[i]<=9) vact = float(MbR[conf.condact[i]]); // entradas analógicas locales 
-        //          else if (condact[i]==254)
-        float tcomp = float(conf.evenvalA[i]);
+        float vact,tcomp;
+        vact = float(MbR[conf.condact[i]])/100;  // temperaturas locales
+        if (conf.evenbaseA[i]<8)
+          tcomp = (float(MbR[conf.evenbaseA[i]]))/100 +conf.evenvalA[i];
+        else
+          tcomp = float(conf.evenvalA[i]);
         if (((conf.evencomp[i]==0) && (vact>=tcomp)) || ((conf.evencomp[i] != 0) && (vact <= tcomp)))
           { // CUMPLE
           if (getbit8(conf.bconsaltipo, i)==0) // señal de salida local
@@ -883,7 +884,7 @@ void procesaeventos()
           { // NO CUMPLE
           setbit8(bconactcumple, i, 0);
           }
-        }
+        }   // fin activadora sonda
       }
     }
 }
@@ -4083,7 +4084,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   printremote();
   if (!autOK()) { sendOther(loghtm,-1); return; }
   msg=vacio;
-  mp=15; // número de parámetros por fila
+  mp=16; // número de parámetros por fila
   if (server.method()==HTTP_POST)
     {
     for (byte i=0; i<maxPrg; i++) setbit8(conf.bPRGeve[posacteve], i, 0);
@@ -4100,7 +4101,8 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       else if (resto==8) setbit8(conf.bconsaltipo, indice, mival);    // Tipo salida: local o remota
       else if (resto==9) conf.evensal[indice] = mival;                // señal a activar
       else if (resto==10) setbit8(conf.bevenniv, indice, mival);      // valor que debe tomar la señal de salida
-      else if (resto>=11) setbit8(conf.bPRGeve[indice], resto - 11, mival); // asociacion PRG
+      else if (resto==11) conf.evenbaseA[indice] = mival;             // señal base comparación
+      else if (resto>=12) setbit8(conf.bPRGeve[indice], resto-12, mival); // asociacion PRG
       }
     saveconf();
     sendOther(svhtm,-1); return;
@@ -4113,7 +4115,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   printP(td, t(asociara), b);
   printP(t(programa), td_f);
   printColspan(2);  printP(t(senal), b); printP(t(activadora),td_f);
-  printColspan(3);  printP(t(ana), td_f);
+  printColspan(4);  printP(t(ana), td_f);
   printColspan(2);  
   printP(t(senal), b);
   printP(t(de),b);
@@ -4124,7 +4126,9 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   pc(pre_f);
   printP(td_f, td, t(senal), td_f);
   printP(td, t(tvalor), td_f);
-  printP(td, t(compa), td_f, td, t(tvalor), td_f);
+  printP(td, t(compa), td_f);
+  printP(td, "Base", td_f);
+  printP(td, "Offset", td_f);
   printP(td, t(hist), td_f);
   printP(td, t(senal), td_f);
   printP(td, ON, barra, OFF, td_f, tr_f);
@@ -4134,16 +4138,17 @@ void ICACHE_FLASH_ATTR setupEveHTML()
   for (byte i=0; i<nEVE; i++) // nEVE=8
     {
     colorea=false;
-    boolean actdigital = ((conf.condact[i]>=10) && (conf.condact[i]<=21));
+    boolean actdigital = ((conf.condact[i]>=8) && (conf.condact[i]<=19));
     mpi=mp*i;
-    indice=(i*15); // parámetros del 420/426 en adelante
+   // indice=(i*mp); // parámetros del 420/426 en adelante
     printP(tr);
     strcpy(auxchar, svhtm); strcat(auxchar, igualp); strcat(auxchar, itoa(i, buff, 10));
     printOpc(false, (i==posacteve), itoa(i+1,buff,10));
     if (i==posacteve)
       {
       printP(td, c(pre_i));
-      for (byte j=0; j<maxPrg; j++) checkBox(mpi + 11 + j, getbit8(conf.bPRGeve[i], j),false);
+      for (byte j=0; j<maxPrg; j++) checkBox(mpi + 12 + j, getbit8(conf.bPRGeve[i], j),false);
+
       printP(c(pre_f), td_f, td);
       printP(c(Select_name),comillas);
       printIP(mpi+2, comillas);
@@ -4156,29 +4161,20 @@ void ICACHE_FLASH_ATTR setupEveHTML()
         printP(readdescr(filedesclocal,j,20));
         pc(option_f);
         }
-      for (byte j=0;j<maxEA;j++)
-        {
-        pc(optionvalue);       // entrada analógica local
-        printPiP(comillas,j+150,comillas);
+      for (byte j=0; j<maxED; j++)  { // añade entradas digitales locales
+        pc(optionvalue);
+        printPiP(comillas, j+8, comillas);
         if (j+8==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
         if (conf.showN) printPiP(mayorparen, j+8, parenguion); else printP(mayor);
         printP(readdescr(filedesclocal,j+8,20));
-        pc(option_f);
-        }
-      for (byte j=0; j<maxED; j++)  { // añade entradas digitales locales
-        pc(optionvalue);
-        printPiP(comillas, j, comillas);
-        if (j+10==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-        if (conf.showN) printPiP(mayorparen, j+10, parenguion); else printP(mayor);
-        printP(readdescr(filedesclocal,j+10,20));
         printP(c(option_f));
         }
       for (byte j=0; j<maxSD; j++)  { // añade salidas digitales locales
         pc(optionvalue);
-        printPiP(comillas, j+2, comillas);
-        if (j+14==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
-        if (conf.showN) printPiP(mayorparen, j+14, parenguion); else printP(mayor);
-        printP(readdescr(filedesclocal,j+14,20));
+        printPiP(comillas, j+12, comillas);
+        if (j+12==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+        if (conf.showN) printPiP(mayorparen, j+12, parenguion); else printP(mayor);
+        printP(readdescr(filedesclocal,j+12,20));
         pc(option_f);
         }
 //      for (byte j=0; j<maxsalrem; j++) // señales digitales remotas
@@ -4242,6 +4238,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       if (conf.bPRGeve[i][0] > 0)
         {
         if (conf.condact[i]<22) printP(readdescr(filedesclocal, conf.condact[i], 20));
+        else if (conf.condact[i]==253) printP("Ninguno");
         else if (conf.condact[i]==254) pt(preciokwh);
         else printP(vacio);
         }
@@ -4255,7 +4252,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       else if (conf.bPRGeve[i][0] > 0)
         printP(conf.condvalD[i] ? ON : OFF);
       printP(td_f);
-      printColspan(3);
+      printColspan(4);
       }
     else    // activadora es analógica
       {
@@ -4272,6 +4269,28 @@ void ICACHE_FLASH_ATTR setupEveHTML()
           printP(mayor, (j == 0) ? mayoroigual : menoroigual, c(option_f));
           }
         printP(c(select_f), td);
+
+        printP(c(Select_name),comillas);
+        printIP(mpi+11, comillas);
+        printP(mayor);
+        for (byte j=0; j<maxTemp; j++)   { // añade temperaturas locales
+          pc(optionvalue);
+          printPiP(comillas, j, comillas);
+          if (j==conf.evenbaseA[i]) printP(b, selected, ig, comillas, selected, comillas);
+          if (conf.showN) printPiP(mayorparen, j, parenguion); else printP(mayor);
+          printP(readdescr(filedesclocal,j,20));
+          pc(option_f);
+          }
+        pc(optionvalue);
+        printPiP(comillas, 253, comillas);
+        if (253==conf.condact[i]) printP(b, selected, ig, comillas, selected, comillas);
+        if (conf.showN) printPiP(mayorparen, 253, parenguion); else printP(mayor);
+        printP("Ninguno");
+        pc(option_f);
+        pc(select_f);
+        printP(td_f,td);
+        
+        
         printcampoF(mpi + 6, conf.evenvalA[i], 5); // valor analógico de comparación
         printP(td_f, td);
         printcampoF(mpi + 7, conf.evenhis[i], 5); // histéresis
@@ -4283,11 +4302,15 @@ void ICACHE_FLASH_ATTR setupEveHTML()
         if (conf.bPRGeve[i][0] > 0)
           {
           printP(td,conf.evencomp[i] ? menoroigual : mayoroigual,td_f);
+          if (conf.evenbaseA[i]==253)
+            printP(td,"Ninguno",td_f);
+          else
+            printP(td,readdescr(filedesclocal,conf.evenbaseA[i],20),td_f);
           printP(td); printF(conf.evenvalA[i], 5); printP(td_f);
           printP(td); printF(conf.evenhis[i], 5); printP(td_f);
           }
         else
-          printColspan(3);
+          printColspan(4);
       }
       printP(td_f);
     }
@@ -4302,7 +4325,7 @@ void ICACHE_FLASH_ATTR setupEveHTML()
         printPiP(comillas, j, comillas);
         if (conf.evensal[i]==j) printP(b, selected, ig, comillas, selected, comillas);
         if (conf.showN) printPiP(mayorparen,j,parenguion); else printP(mayor);
-        printP(readdescr(filedesclocal,j+14, 20));
+        printP(readdescr(filedesclocal,j+12, 20));
         pc(option_f);
         }
       for (byte j=0; j<maxEsc; j++) // añade escenas, 8
@@ -4337,13 +4360,13 @@ void ICACHE_FLASH_ATTR setupEveHTML()
       {
       if (conf.bPRGeve[i][0] > 0)
         {
-        if (conf.evensal[i]<8) printP(readdescr(filedesclocal, conf.evensal[i]+14, 20)); // 1-7
+        if (conf.evensal[i]<8) printP(readdescr(filedesclocal, conf.evensal[i]+12, 20)); // 1-7
         else if (conf.evensal[i]<16) printP(readdescr(filedescesc, conf.evensal[i]-8, 20)); // 8-15
         else if (conf.evensal[i] == despIFTTT) pt(notifttt);  // 252
         }
       }
     printP(td_f, td);
-    if (i==posacteve) printcampoSiNo(mpi + 10, getbit8(conf.bevenniv, i));
+    if (i==posacteve) printcampoSiNo(mpi+10, getbit8(conf.bevenniv, i));
     else if (conf.bPRGeve[i][0]>0) printP(getbit8(conf.bevenniv, i)?ON:OFF);
     printP(td_f, tr_f);
     }

@@ -4,7 +4,6 @@
 
 #define CONUCO        // usado para pinout PCB
 #define PCBV4         // versión de PCB
-//#define PCBV4       // versión de PCB
 //#define PCBV5       // versión de PCB
 #define INITFAB false    // si true, se resetea a fábrica, si false no se hace nada
 #define versinst 2039    // primera versión ESP32 
@@ -526,12 +525,12 @@ void checkbtBC(int x, int y)
 
 void checkbtAL(int x, int y)
 {
-  Serial.println("checkbtAL");
   for (byte i=0;i<3;i++)  // botones ok,esc,backspace
     { 
     if (btYN[i].contains(x,y)) 
       {
-//      ackalarma=2;    // alarma reconocida
+      Serial.println("checkbtAL");
+      estalarma[tipoalarma1]=2;    // reconocer alarma
       tftpage=0;
       delay(50);
       clearTFT();
@@ -614,7 +613,8 @@ void handletfttouch()
         }
       else if (tftpage==22) 
         { 
-        checkbtAL(x,y); }    // check botón reconocer alarma
+        checkbtAL(x,y); 
+        }    // check botón reconocer alarma
       }
     } 
 }
@@ -713,7 +713,7 @@ void task1() {
 	countfaulttime++;   // si se hace mayor que TempDesactPrg,desactiva ejecucion programas dependientes de fecha
 	leevaloresDIG();
   leevaloresGPIO();
-  //procesaeventos();
+  procesaeventos();
 	//procesaTimeMax();
 
 	if(conf.modofi==0)    // normal

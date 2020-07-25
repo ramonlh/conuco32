@@ -89,39 +89,55 @@ void setALARMA(byte tipoalarma)
 void checkAlarma()
 {
   if (idbc[idBP]==1)
-    { if (estalarma[5]==0) estalarma[5]=1; }
-  else
-    { estalarma[5]=0; }
+    { 
+    if (estalarma[4]==0) estalarma[4]=1; 
+    }
+  else                          
+    { estalarma[4]=0; }
   if (idbc[idHP]==1)
-    { if (estalarma[6]==0) estalarma[6]=1; }
+    { 
+    if (estalarma[5]==0) estalarma[5]=1; 
+    }
   else
-    { estalarma[6]=0;  }
-    
-  byte i=9;
-  while (i>0)
+    { estalarma[5]=0;  }
+  byte i=0;
+  while (i<9)
     { 
     Serial.print("i:"); Serial.print(i);
     Serial.print(" estalarma[i]:"); Serial.println(estalarma[i]);
-    if (estalarma[i]==1) 
+    if (estalarma[i]==2)
       {
-     // tipoalarma=i; 
-      Serial.println("ASIGNADO");
+      Serial.println("ASIGNADA 2");
       break;
       }
-    i--; 
+    i++; 
     }
-  tipoalarma=i;
+  tipoalarma2=i;
+  i=0;
+  while (i<9)
+    { 
+    Serial.print("i:"); Serial.print(i);
+    Serial.print(" estalarma[i]:"); Serial.println(estalarma[i]);
+    if (estalarma[i]==1)
+      {
+      Serial.println("ASIGNADA 1");
+      break;
+      }
+    i++; 
+    }
+  tipoalarma1=i;
   Serial.print("i:"); Serial.println(i);
-  Serial.print("tipoalarma:"); Serial.print(tipoalarma);Serial.print("   ");
+  Serial.print("tipoalarma1:"); Serial.print(tipoalarma1);Serial.print("   ");
+  Serial.print("tipoalarma2:"); Serial.print(tipoalarma2);Serial.print("   ");
   for (byte i=0;i<10;i++) { Serial.print(estalarma[i]); Serial.print(","); } Serial.println();
 }
 
 void procesaBC() 
 {
   checkAlarma();
-  if (tipoalarma>0) 
+  if (tipoalarma2<9) 
     { 
-    if (estalarma[tipoalarma]==1)
+    if (estalarma[tipoalarma2]==1)
       {
       Serial.println("setAlarmON");
       setAlarmON(); 
@@ -130,8 +146,9 @@ void procesaBC()
       }
     } 
   else 
-    { 
-    setAlarmOFF(); 
+    {
+    if (estalarma[tipoalarma2]==0) 
+      setAlarmOFF(); 
     }
   
   if (CALisON) consignaAct=consignaCal();

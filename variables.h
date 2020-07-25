@@ -178,6 +178,7 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 int Nbh=240;  // número de horas
                 int TL2=65;   // temperatura límite salida agua
                 byte APP=0;   // Modo apoyo
+                byte evenbaseA[nEVE]={0,0,0,0,0,0,0,0};  // 8, valor de base de comparación
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes
@@ -377,7 +378,8 @@ boolean demCAL=false;
 boolean demREF=false;
 
 
-byte tipoalarma=0;
+byte tipoalarma1=9;   // alarma no reconocida
+byte tipoalarma2=9;   // alarma reconocida
 byte estalarma[10]={0,0,0,0,0,0,0,0,0,0};   // 0:estado inicial, 1:pendiente reconocer, 2:reconocida
-char textalarma[10][10]={"None","Ai1","Ai2","Ai3","Ai4","BP","HP","AH2","AH4","AB4"};
+char textalarma[10][10]={"Ai1","Ai2","Ai3","Ai4","BP","HP","AH2","AH4","AB4","None"};
 
