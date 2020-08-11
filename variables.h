@@ -179,6 +179,7 @@ typedef struct {int devori; int actualizaut; float s[3]; float a1; char ua1[4]; 
                 int TL2=65;   // temperatura límite salida agua
                 byte APP=0;   // Modo apoyo
                 byte evenbaseA[nEVE]={0,0,0,0,0,0,0,0};  // 8, valor de base de comparación
+                byte bshowbypanelgpio[maxpaneles][2]; // 20 bytes, tabla para asignar señales a paneles
                } conftype;
     conftype conf;     
     byte *buffconf = (byte *) &conf; // acceder a conf como bytes

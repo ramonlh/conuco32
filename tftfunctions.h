@@ -159,12 +159,6 @@ void drawStarting()
 
 void initTFT()
 {
-  Serial.print("TFT_RST:"); Serial.println(TFT_RST);
-  Serial.print("TFT_DC:"); Serial.println(TFT_DC);
-  Serial.print("TFT_MISO:"); Serial.println(TFT_MISO);
-  Serial.print("TFT_MOSI:"); Serial.println(TFT_MOSI);
-  Serial.print("TFT_SCLK:"); Serial.println(TFT_SCLK);
-  Serial.print("TFT_CS:"); Serial.println(TFT_CS);
   if (conf.TFTenabled==0) return;
   pinMode(TFT_RST,OUTPUT);
   digitalWrite(TFT_RST,0);delay(100); digitalWrite(TFT_RST,1);

@@ -11,24 +11,18 @@ void ICACHE_FLASH_ATTR mqttpublish(int i)
       itoa(MbR[i]/100,buff1,10); itoa(MbR[i]%100,buff2,10);      
       strcpy(auxchar,buff1); strcat(auxchar,"."); strcat(auxchar,buff2);  
       }
-    else if (i<=9) 
-      { 
-      char buff1[10], buff2[10];
-      itoa(MbR[i]*conf.factorA[i-8]+conf.offsetA[i-8],buff1,10); itoa(MbR[i]%100,buff2,10);      
-      strcpy(auxchar,buff1); strcat(auxchar,"."); strcat(auxchar,buff2);  
-      }
-    else if (i<=13) { strcpy(auxchar,itoa(getbit8(conf.MbC8,i-10+8),buff,10));  }
-    else if (i<=21) { strcpy(auxchar,itoa(getbit8(conf.MbC8,i-14),buff,10));  }
-    else if (i==22) { strcpy(auxchar,itoa(conf.iddevice,buff,10));  }            // iddevice
-    else if (i==23) {                                                            // IP privada 
+    else if (i<=11) { strcpy(auxchar,itoa(getbit8(conf.MbC8,i-8+8),buff,10));  }   // entradas
+    else if (i<=19) { strcpy(auxchar,itoa(getbit8(conf.MbC8,i-12),buff,10));  }     // salidas
+    else if (i==20) { strcpy(auxchar,itoa(conf.iddevice,buff,10));  }            // iddevice
+    else if (i==21) {                                                            // IP privada 
       strcat(auxchar,itoa(WiFi.localIP()[0],buff,10));
       for (byte j=1;j<4;j++) { strcat(auxchar,"."); strcat(auxchar,itoa(WiFi.localIP()[j],buff,10)); }     }
-    else if (i==24) { strcpy(auxchar,conf.myippub);  }                               // IP pública
-    else if ((i>=25)&&(i<=33))    // consignas
+    else if (i==22) { strcpy(auxchar,conf.myippub);  }                               // IP pública
+    else if ((i>=23)&&(i<=31))    // consignas
       { 
       char buff1[10], buff2[10];
       long l1, l2;
-      l1=conf.setpoint[i-25]*100; // 2 decimales
+      l1=conf.setpoint[i-23]*100; // 2 decimales
       l2=l1%100;                  // los dos decimales
       l1=l1/100;                  // la parte entera
       itoa(l1,buff1,10); itoa(l2,buff2,10);      
@@ -169,16 +163,16 @@ void createdashfile()
     { 
     primero=true;
     f.print(corchete_i); 
-    for (int i=0;i<33+maxsalrem;i++)     
+    for (int i=0;i<31+maxsalrem;i++)     
       { 
-      if (i<=32) 
+      if (i<=30) 
         { sendcomunes(f,i); }        
       else 
         {
-        if (conf.idsalremote[i-33]>0) {  sendcomunes(f,i);}
+        if (conf.idsalremote[i-31]>0) {  sendcomunes(f,i);}
         }
         
-      if (i<=32)      // señales locales
+      if (i<=30)      // señales locales
         {
         if (i<=7)     // sondas
           {
@@ -193,20 +187,7 @@ void createdashfile()
           senddashtag(f, dashname); senddashlocal(f, i, false); 
           f.print(llave_f); 
           }
-        else if (i<=9)     // ent. analógicas
-          {
-          senddashtag(f, dashlastPayload);  senddashfloat(f, 0.0, true);
-          senddashtag(f, dashmainTextSize);  senddashtext(f, medium,true); 
-          senddashtag(f, dashtextcolor);  senddashint(f, 0x334CFF, true); 
-          senddashtag(f, dashprefix);  senddashtext(f, vacio, true); 
-          senddashtag(f, dashtopicPub); senddashpub(f, i, true,tstate); 
-          senddashtag(f, dashpostfix);  senddashtext(f, vacio, true); 
-          senddashtag(f, dashtype); senddashint(f, 1, true); 
-          senddashtag(f, dashtopic); senddashpub(f, i, true, vacio); 
-          senddashtag(f, dashname); senddashlocal(f, i, false); 
-          f.print(llave_f); 
-          }
-        else if (i<=13)     // entradas digitales
+        else if (i<=11)     // entradas digitales
           {
           senddashtag(f, dashlastPayload);  senddashtext(f, cero, true);
           senddashtag(f, dashoffcolor);  senddashint(f, -1,true); 
@@ -219,7 +200,7 @@ void createdashfile()
           senddashtag(f, dashname); senddashlocal(f, i, false); 
           f.print(llave_f); 
           }
-        else if (i<=21)   // salidas digitales
+        else if (i<=19)   // salidas digitales
           { 
           senddashtag(f, dashlastPayload);  senddashtext(f, cero, true);
           senddashtag(f, dashoffcolor);  senddashint(f, -1,true); 
@@ -234,7 +215,7 @@ void createdashfile()
           senddashtag(f, dashname); senddashlocal(f, i, false); 
           f.print(llave_f); 
           }
-        else if (i<=24)        // id, ip, ipp
+        else if (i<=22)        // id, ip, ipp
           {
           senddashtag(f, dashlastPayload);  senddashint(f, 0, true);
 //          senddashtag(f, dashmainTextSize);  senddashtext(f, small,true); 
@@ -248,7 +229,7 @@ void createdashfile()
           senddashtag(f, dashtopic); senddashpub(f, i, false, vacio);
           f.print(llave_f); 
           }
-        else if (i<=32)        // consignas
+        else if (i<=30)        // consignas
           {
           senddashtag(f, dashlastPayload);  senddashfloat(f, 0.0, true);
           senddashtag(f, dashmainTextSize);  senddashtext(f, medium,true); 
@@ -263,21 +244,21 @@ void createdashfile()
         }
       else      // señales remotas
         {
-        if ((conf.idsalremote[i-33]>=1) && (conf.idsalremote[i-33]<=31))    // modbus
+        if ((conf.idsalremote[i-31]>=1) && (conf.idsalremote[i-31]<=29))    // modbus
           {
           }
-        else if ((conf.idsalremote[i-33] >=150) && (conf.idsalremote[i-33] <=167))
+        else if ((conf.idsalremote[i-31] >=150) && (conf.idsalremote[i-31] <=167))
           {
-          if (conf.senalrem[i-33]<=2)       // TEMPERATURAS
+          if (conf.senalrem[i-31]<=2)       // TEMPERATURAS
             {
             senddashtag(f, dashlastPayload);  senddashfloat(f, 0.0, true);
             senddashtag(f, dashmainTextSize);  senddashtext(f, medium,true); 
             senddashtag(f, dashtextcolor);  senddashint(f, -192, true); 
             senddashtag(f, dashprefix);  senddashtext(f, vacio, true); 
-            senddashtag(f, dashtopicPub); senddashpubrem(f, i-33, conf.senalrem[i-33], true,tset);     ///////////////////////////   modificar
+            senddashtag(f, dashtopicPub); senddashpubrem(f, i-31, conf.senalrem[i-33], true,tset);     ///////////////////////////   modificar
             senddashtag(f, dashpostfix); senddashtext(f, vacio,true);
             }
-          else if (conf.senalrem[i-33]<=3)       // ENT. ANAL.
+          else if (conf.senalrem[i-31]<=3)       // ENT. ANAL.
             {
             senddashtag(f, dashlastPayload);  senddashfloat(f, 0.0, true);
             senddashtag(f, dashmainTextSize);  senddashtext(f, medium,true); 
@@ -286,7 +267,7 @@ void createdashfile()
             senddashtag(f, dashtopicPub); senddashpubrem(f, i-33, conf.senalrem[i-33], true,vacio);     ///////////////////////////   modificar
             senddashtag(f, dashpostfix); senddashtext(f, vacio,true);
             }
-          else if (conf.senalrem[i-33]<=5) // ent. dig.
+          else if (conf.senalrem[i-31]<=5) // ent. dig.
             {
             senddashtag(f, dashlastPayload);  senddashfloat(f, 0.0, true);
             senddashtag(f, dashmainTextSize);  senddashtext(f, medium,true); 
@@ -295,7 +276,7 @@ void createdashfile()
             senddashtag(f, dashtopicPub); senddashpubrem(f, i-33, conf.senalrem[i-33], true,tstate);     ///////////////////////////   modificar
             senddashtag(f, dashpostfix); senddashtext(f, vacio,true);
             }
-          else if (conf.senalrem[i-33]<=7)      // sal. dig
+          else if (conf.senalrem[i-31]<=7)      // sal. dig
             {
             senddashtag(f, dashlastPayload);  senddashtext(f, cero, true);
             senddashtag(f, dashoffcolor);  senddashint(f, -1,true); 
@@ -310,12 +291,12 @@ void createdashfile()
           senddashtag(f, dashtopic); senddashpubrem(f, i-33, conf.senalrem[i-33], true, vacio);
           
           senddashtag(f, dashtype);  
-          if (conf.senalrem[i-33]<=3) senddashint(f, 1, false); 
-          else if (conf.senalrem[i-33]<=5) senddashint(f, tipoedremote[i-33]<=1?2:1, false); 
+          if (conf.senalrem[i-31]<=3) senddashint(f, 1, false); 
+          else if (conf.senalrem[i-31]<=5) senddashint(f, tipoedremote[i-31]<=1?2:1, false); 
           else senddashint(f, 2, false); 
           f.print(llave_f); 
           }
-        else if (conf.idsalremote[i-33]>0)          // resto, I2C, BMP085,etc
+        else if (conf.idsalremote[i-31]>0)          // resto, I2C, BMP085,etc
           {
           senddashtag(f, dashlastPayload);  senddashtext(f, cero, true);
           senddashtag(f, dashmainTextSize);  senddashtext(f, medium,true); 
@@ -323,8 +304,8 @@ void createdashfile()
           senddashtag(f, dashprefix);  senddashtext(f, vacio, true); 
           senddashtag(f, dashpostfix);  senddashtext(f, vacio, true); 
           senddashtag(f, dashtopicPub); senddashtext(f, vacio, true); 
-          senddashtag(f, dashname); senddashrem(f, i-33, true); 
-          senddashtag(f, dashtopic); senddashi2c(f, i-33, conf.senalrem[i-33], true, vacio);
+          senddashtag(f, dashname); senddashrem(f, i-31, true); 
+          senddashtag(f, dashtopic); senddashi2c(f, i-31, conf.senalrem[i-31], true, vacio);
           senddashtag(f, dashtype); senddashint(f, 1, false); 
           f.print(llave_f); 
           }
@@ -337,7 +318,8 @@ void createdashfile()
   if (conf.mqttenabled) {
     File f=SPIFFS.open(filedash,"r");
     if (f)  {
-      if (!PSclient.connected()) mqttreconnect();
+      if (!PSclient.connected()) 
+        mqttreconnect();
       if (PSclient.beginPublish("conuco/dash", f.size(), false))
         {
         char auxb[1];
@@ -1359,81 +1341,82 @@ void ICACHE_FLASH_ATTR panelnoHTML() {
    for (byte i=0;i<maxgpiovar;i++)    // GPIOs
      {
       if (gpiovis(i))
-        {
-        printP(tr);
-        if (conf.gpiosensortype[i]==0)    // input
+        if (getbit8(conf.bshowbypanelgpio[auxI], i))
           {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letrag, letrai); 
-          printI(i);      // número de la etiqueta "#ln"
-          printP(comilla, mayor);
-          HtmlGetStateIn(1,i);
-          printP(tr_f);
+          printP(tr);
+          if (conf.gpiosensortype[i]==0)    // input
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letrag, letrai); 
+            printI(i);      // número de la etiqueta "#ln"
+            printP(comilla, mayor);
+            HtmlGetStateIn(1,i);
+            printP(tr_f);
+            }
+          else if (conf.gpiosensortype[i]==1)   // output
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letrag, letrao); 
+            printI(i);
+            printP(comilla, mayor);
+            HtmlGetStateOut(1,i);
+            printP(tr_f);
+            }
+          else if (conf.gpiosensortype[i]==2)   // ADC
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letral); 
+            printI(i);
+            printP(comilla, mayor);
+            HtmlGetStateGPIO(i);
+            printP(tr_f);
+            }
+          else if (conf.gpiosensortype[i]==3)   // DAC
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letral); 
+            printI(i);
+            printP(comilla, mayor);
+            HtmlGetStateOut(1,i);
+            printP(tr_f);
+            }
+          else if (conf.gpiosensortype[i]==4)    // DHT 
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letrag,letrae); 
+            printI(i);
+            printP(comilla, mayor);
+            HtmlGetStateTemp(1, i);
+            printP(tr_f);
+            }
+          else if ((conf.gpiosensortype[i]==5) || (conf.gpiosensortype[i]==6))   // PT1000 A99 o NTC10K Carel
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letrag,letrae); 
+            printI(i);
+            printP(comilla, mayor);
+            HtmlGetStateTemp(1, i);
+            printP(tr_f);
+            }
+          else if (conf.gpiosensortype[i]==7)    // ACS712 corriente 
+            {
+            printP(menor, letrat, letrar, b);
+            printP(c(tid), ig, comilla, letrag,letrae); 
+            printI(i);
+            printP(comilla, mayor);
+            HtmlGetStateGPIO(i);
+            printP(tr_f);
+            }
+          else
+            {
+            printP(td,readdescr(filedescgpio,i,20),b);
+            printP(sensortype[conf.gpiosensortype[i]]); 
+            printP(b); printI(conf.gpioalfa[i]);
+            printP(b); printI(conf.gpiobeta[i]);
+            printP(b); printI(conf.gpiogamma[i]);
+            printP(td_f,tr_f);
+            }
           }
-        else if (conf.gpiosensortype[i]==1)   // output
-          {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letrag, letrao); 
-          printI(i);
-          printP(comilla, mayor);
-          HtmlGetStateOut(1,i);
-          printP(tr_f);
-          }
-        else if (conf.gpiosensortype[i]==2)   // ADC
-          {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letral); 
-          printI(i);
-          printP(comilla, mayor);
-          HtmlGetStateGPIO(i);
-          printP(tr_f);
-          }
-        else if (conf.gpiosensortype[i]==3)   // DAC
-          {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letral); 
-          printI(i);
-          printP(comilla, mayor);
-          HtmlGetStateOut(1,i);
-          printP(tr_f);
-          }
-        else if (conf.gpiosensortype[i]==4)    // DHT 
-          {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letrag,letrae); 
-          printI(i);
-          printP(comilla, mayor);
-          HtmlGetStateTemp(1, i);
-          printP(tr_f);
-          }
-        else if ((conf.gpiosensortype[i]==5) || (conf.gpiosensortype[i]==6))   // PT1000 A99 o NTC10K Carel
-          {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letrag,letrae); 
-          printI(i);
-          printP(comilla, mayor);
-          HtmlGetStateTemp(1, i);
-          printP(tr_f);
-          }
-        else if (conf.gpiosensortype[i]==7)    // ACS712 corriente 
-          {
-          printP(menor, letrat, letrar, b);
-          printP(c(tid), ig, comilla, letrag,letrae); 
-          printI(i);
-          printP(comilla, mayor);
-          HtmlGetStateGPIO(i);
-          printP(tr_f);
-          }
-        else
-          {
-          printP(td,readdescr(filedescgpio,i,20),b);
-          printP(sensortype[conf.gpiosensortype[i]]); 
-          printP(b); printI(conf.gpioalfa[i]);
-          printP(b); printI(conf.gpiobeta[i]);
-          printP(b); printI(conf.gpiogamma[i]);
-          printP(td_f,tr_f);
-          }
-        }
      }
 
   // final
@@ -2719,14 +2702,17 @@ void ICACHE_FLASH_ATTR setupbyPanelHTML()
   if (server.method() == HTTP_POST)
     {
     memset(conf.bshowbypanel[auxI],0, sizeof(conf.bshowbypanel[auxI]));
+    memset(conf.bshowbypanelgpio[auxI],0, sizeof(conf.bshowbypanelgpio[auxI]));
     for (int i=0; i<server.args(); i++)
       {
       if ((server.argName(i)!="n") && (server.argName(i)!="p"))
         { 
         calcindices(i); 
-        if (indice<100)
+        if (indice<20)
           setbit8(conf.bshowbypanel[auxI], indice, 1);   
-        else
+        else if (indice<30)
+          setbit8(conf.bshowbypanelgpio[auxI], indice-20, 1);   
+        else if (indice>=100)
           setbit8(conf.bshowbypanel[auxI], indice-100+22, 1);   
         }
       }
@@ -2761,10 +2747,21 @@ void ICACHE_FLASH_ATTR setupbyPanelHTML()
       checkBox(mpi, colorea,false);
       printP(colorea?th_f:td_f);
       }
+    else if (i<30)    // GPIOs configurables
+      {
+      colorea=(getbit8(conf.bshowbypanelgpio[auxI], i-20));
+      printP(tr,td,letraG,letraP);
+      printI(i-20);
+      printP(td_f, colorea?th:td);
+      printP(readdescr(filedescgpio,i-20,20));
+      printP(colorea?th_f:td_f, colorea?th:td);
+      checkBox(mpi, colorea,false);
+      printP(colorea?th_f:td_f);
+      }
     else
       printColspan(3);
     printP(td,td_f);
-        // señales remotas
+    // señales remotas
     colorea=(getbit8(conf.bshowbypanel[auxI], i+22));
     printP(td,letraR);
     printI(i);
@@ -5054,6 +5051,7 @@ void ICACHE_FLASH_ATTR mqttpublishvalues()
 
 void mqttcallback(char* topic, byte* payload, unsigned int length) 
 {
+  Serial.println("mqttcallback");
   printhora();
   // buscar solicitud set
   int auxb=mqttextraepin(topic,"set");
@@ -5068,19 +5066,19 @@ void mqttcallback(char* topic, byte* payload, unsigned int length)
     mqttpublish(auxb);      // temperatura
     mqttpublish(auxb+25);   // consigna
     }
-  else if ((auxb>=14) && (auxb<=21))   // salidas digitales
+  else if ((auxb>=12) && (auxb<=19))   // salidas digitales
     {
-    if ((char)payload[0]=='0') { pinVAL(auxb-14,0,0); }
-    if ((char)payload[0]=='1') { pinVAL(auxb-14,1,0); }
+    if ((char)payload[0]=='0') { pinVAL(auxb-12,0,0); }
+    if ((char)payload[0]=='1') { pinVAL(auxb-12,1,0); }
     }
-  else if ((auxb>=25) && (auxb<=33))     //    // consignas
+  else if ((auxb>=23) && (auxb<=31))     //    // consignas
     {
     msg=vacio;
     for (byte j=0; j<length;j++) msg+=(char)payload[j];
     Serial.print("msg:");Serial.println(msg);
-    conf.setpoint[auxb-25]=msg.toFloat(); 
+    conf.setpoint[auxb-23]=msg.toFloat(); 
     saveconf(); 
-    mqttpublish(auxb-25);   // temperatura
+    mqttpublish(auxb-23);   // temperatura
     mqttpublish(auxb);        // consigna
     }
     
@@ -5099,9 +5097,9 @@ PSclient.subscribe(topic); }
 void ICACHE_FLASH_ATTR mqttsubscribevalues()
 {
   long tini=millis();
-  for (byte i=0;i<33;i++)
+  for (byte i=0;i<31;i++)
     {
-    boolean suscribir=(i<25?getbit8(conf.mqttsalenable,i):getbit8(conf.mqttsalenable,i-25));  
+    boolean suscribir=(i<23?getbit8(conf.mqttsalenable,i):getbit8(conf.mqttsalenable,i-23));  
     if (suscribir)
       {
       strcpy(auxdesc,conf.mqttpath[0]); strcat(auxdesc,"/");
@@ -5110,7 +5108,7 @@ void ICACHE_FLASH_ATTR mqttsubscribevalues()
       strcat(auxdesc,"/state");
       mqttsubscribe(auxdesc);
 //      PSclient.subscribe(auxdesc);
-      if ((i<=7) || (i>=14))
+      if ((i<=7) || (i>=12))
         {
         strcpy(auxdesc,conf.mqttpath[0]); strcat(auxdesc,"/");
         for (byte j=1;j<6;j++) { if (strlen(conf.mqttpath[j])>0) {  strcat(auxdesc,conf.mqttpath[j]); strcat(auxdesc,"/"); } }

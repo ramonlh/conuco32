@@ -6,7 +6,7 @@
 #define PCBV4         // versión de PCB
 //#define PCBV5       // versión de PCB
 #define INITFAB false    // si true, se resetea a fábrica, si false no se hace nada
-#define versinst 2039    // primera versión ESP32 
+#define versinst 2040    // versión ESP32 
 #define debug true
 #define debugwifi false
 
@@ -215,10 +215,10 @@ void initTime() {
 	if(WiFi.isConnected()) {
 		timeClient.setTimeOffset(3600);
 		if(timeClient.update()==1)
-		{countfaulttime=0; setTime(timeClient.getEpochTime()); }
+	  	{countfaulttime=0; setTime(timeClient.getEpochTime()); }
 		else {
 			Serial.print("timeclient.update:");		Serial.println(timeClient.update());
-		}
+		  }
 	}
 }
 
@@ -263,19 +263,18 @@ void ICACHE_FLASH_ATTR setup(void) {
 	initEntDig();
 	initSalDig();
 	initGpios();
-  if (conf.TFTenabled)  { initTFT();  }
-	initWiFi();
-	initFTP();
-	initHTML();
-	initTime();
-	initWebserver();
-	if (conf.mqttenabled) initPubSub();
-	initIFTTT();
-
-	Serial.println();	Serial.print("vers. ");	Serial.println(versinst);
-	checkMyIP();
+  if (conf.TFTenabled)  { initTFT(); Serial.println("initTFT"); }
+	initWiFi();   Serial.println("initWiFi");
+	initFTP();    Serial.println("initFTP");
+	initHTML();    Serial.println("initHTML");
+//	initTime();    Serial.println("initTime");
+	initWebserver();    Serial.println("initWebserver");
+	if (conf.mqttenabled) { initPubSub();     Serial.println("initPubSub"); }
+	initIFTTT();     Serial.println("initIFTTT");
+	Serial.print("vers. ");	Serial.println(versinst);
+	checkMyIP();     Serial.println("checkMyIP");
 	dPrint(t(ippublica));	dPrint(dp);	dPrint(conf.myippub);	dPrint(crlf);
-  initLCD();
+  initLCD();     Serial.println("initLCD");
 
   if (conf.TFTenabled)   
     { 
@@ -714,6 +713,7 @@ void task1() {
 	leevaloresDIG();
   leevaloresGPIO();
   procesaeventos();
+  handlePubSub();
 	//procesaTimeMax();
 
 	if(conf.modofi==0)    // normal
@@ -747,14 +747,11 @@ void taskvar() {
 		if(conf.mododweet == 1) { postdweet(mac); }
 		if(conf.iottweetenable == 1) { postIoTweet(); }
 		actualizaremotos();
-		if(conf.mqttenabled) {
-			if(!PSclient.connected())  {
-				if(mqttreconnect()) {
-					mqttsubscribevalues();
-				}
-			}
-			if(PSclient.connected())  {	mqttpublishvalues();	}
-		  }
+  if(conf.mqttenabled) 
+    {
+    if(!PSclient.connected())  { if(mqttreconnect()) { mqttsubscribevalues(); } }
+    if(PSclient.connected()) { mqttpublishvalues();  }
+    }
 	}
 
 	if((millis()-tini)>5000) {printhora(); Serial.print(F(" 5 SEG:")); Serial.println(millis()-tini);}
@@ -792,7 +789,18 @@ void handleSerial()
 
 void handleFTP()  { if(conf.ftpenable) { ftpSrv.handleFTP(); } }
 void handleWebclient()  { server.handleClient(); }
-void handlePubSub()  {  if (conf.mqttenabled) PSclient.loop(); }
+void handlePubSub()  
+  {  
+  if(conf.mqttenabled) 
+    {
+    if(!PSclient.connected())  {
+      if(mqttreconnect()) { mqttsubscribevalues(); }
+      }
+    if(PSclient.connected())  
+      { 
+      mqttpublishvalues();  }
+    }
+  }
 
 void tictacxxx(byte pin, int dur)
   {
@@ -807,7 +815,7 @@ void loop(void) {
   handleSerial();
   handleFTP();
   handleWebclient();
-  handlePubSub();
+  PSclient.loop();
 	leevaloresDIG();
 	handletfttouch();
 	//handleRF();

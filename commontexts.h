@@ -111,6 +111,7 @@ PGM_P(letraD)="D";
 PGM_P(letrae)="e";
 PGM_P(letraf)="f";
 PGM_P(letrag)="g";
+PGM_P(letraG)="G";
 PGM_P(letrah)="h";
 PGM_P(letraH)="H";
 PGM_P(letrai)="i";
