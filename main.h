@@ -335,6 +335,7 @@ void ICACHE_FLASH_ATTR leevaloresDIG()
   for (byte i=0;i<maxED;i++) 
     {
     byte valaux=digitalRead(edPin[i]);
+    Serial.print(" i:"); Serial.print(valaux);
     if (conf.tipoED[i]==0)
       setbit8(conf.MbC8,i+8,valaux);  
     else if (conf.tipoED[i]==1) 
@@ -349,6 +350,8 @@ void ICACHE_FLASH_ATTR leevaloresDIG()
       if (getbit8(conf.MbC8,i+8)==1) conf.contadores[i]++;  
       }
     }
+
+  Serial.println();
   MbC8ant[1]=conf.MbC8[1];
   
   for (byte i=0;i<maxgpiovar;i++)   // lee Gpios que son ED
