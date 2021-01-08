@@ -1,22 +1,29 @@
-boolean V4VON() { return digitalRead(sdPin[1])==1; }
-boolean BCalON() { return digitalRead(sdPin[2])==1; }
-boolean BCapON() { return digitalRead(sdPin[3])==1; }
-boolean BACSON() { return digitalRead(sdPin[4])==1; }
-boolean CompON() { return digitalRead(sdPin[5])==1; }
-boolean AlarmON() { return digitalRead(sdPin[7])==1; }
+#define pinBCal 02
+#define pinBCap 03
+#define pinBACS 04
+#define pinComp 05
+#define pinV4V 06
+#define pinAlarm 07
 
-void setV4VON() { if (V4VON()) return; pinVAL(1, 1, conf.iddevice);}
-void setV4VOFF() { if (!V4VON()) return; pinVAL(1, 0, conf.iddevice);  }
-void setBCalON() { if (BCalON()) return; pinVAL(2, 1, conf.iddevice);}
-void setBCalOFF() { if (!BCalON()) return; pinVAL(2, 0, conf.iddevice);  }
-void setBCapON() { if (BCapON()) return; pinVAL(3, 1, conf.iddevice);  }
-void setBCapOFF() { if (!BCapON()) return; pinVAL(3, 0, conf.iddevice);  }
-void setBACSON() { if (BACSON()) return; pinVAL(4, 1, conf.iddevice);  }
-void setBACSOFF() { if (!BACSON()) return; pinVAL(4, 0, conf.iddevice);  }
-void setComprON() { if (CompON()) return; pinVAL(5, 1, conf.iddevice);  }
-void setComprOFF() { if (!CompON()) return; pinVAL(5, 0, conf.iddevice);  }
-void setAlarmON() { if (AlarmON()) return; pinVAL(7, 1, conf.iddevice); tftpage=22; }
-void setAlarmOFF() { if (!AlarmON()) return; pinVAL(7, 0, conf.iddevice); drawTFT(); }
+boolean V4VON() { return digitalRead(sdPin[pinV4V])==1; }
+boolean BCalON() { return digitalRead(sdPin[pinBCal])==1; }
+boolean BCapON() { return digitalRead(sdPin[pinBCap])==1; }
+boolean BACSON() { return digitalRead(sdPin[pinBACS])==1; }
+boolean CompON() { return digitalRead(sdPin[pinComp])==1; }
+boolean AlarmON() { return digitalRead(sdPin[pinAlarm])==1; }
+
+void setV4VON() { if (V4VON()) return; pinVAL(pinV4V, 1, conf.iddevice);}
+void setV4VOFF() { if (!V4VON()) return; pinVAL(pinV4V, 0, conf.iddevice);  }
+void setBCalON() { if (BCalON()) return; pinVAL(pinBCal, 1, conf.iddevice);}
+void setBCalOFF() { if (!BCalON()) return; pinVAL(pinBCal, 0, conf.iddevice);  }
+void setBCapON() { if (BCapON()) return; pinVAL(pinBCap, 1, conf.iddevice);  }
+void setBCapOFF() { if (!BCapON()) return; pinVAL(pinBCap, 0, conf.iddevice);  }
+void setBACSON() { if (BACSON()) return; pinVAL(pinBACS, 1, conf.iddevice);  }
+void setBACSOFF() { if (!BACSON()) return; pinVAL(pinBACS, 0, conf.iddevice);  }
+void setComprON() { if (CompON()) return; pinVAL(pinComp, 1, conf.iddevice);  }
+void setComprOFF() { if (!CompON()) return; pinVAL(pinComp, 0, conf.iddevice);  }
+void setAlarmON() { if (AlarmON()) return; pinVAL(pinAlarm, 1, conf.iddevice); tftpage=22; }
+void setAlarmOFF() { if (!AlarmON()) return; pinVAL(pinAlarm, 0, conf.iddevice); drawTFT(); }
 
 int consignaCal()
 {
@@ -82,7 +89,7 @@ void pararTODO()
 
 void setALARMA(byte tipoalarma)
 {
-  pinVAL(7, 1, conf.iddevice); 
+  pinVAL(pinAlarm, 1, conf.iddevice); 
   tftpage=22;
 }
 
@@ -103,8 +110,6 @@ void checkAlarma()
   byte i=0;
   while (i<9)
     { 
-    Serial.print("i:"); Serial.print(i);
-    Serial.print(" estalarma[i]:"); Serial.println(estalarma[i]);
     if (estalarma[i]==2)
       {
       Serial.println("ASIGNADA 2");
@@ -116,8 +121,6 @@ void checkAlarma()
   i=0;
   while (i<9)
     { 
-    Serial.print("i:"); Serial.print(i);
-    Serial.print(" estalarma[i]:"); Serial.println(estalarma[i]);
     if (estalarma[i]==1)
       {
       Serial.println("ASIGNADA 1");
@@ -126,10 +129,6 @@ void checkAlarma()
     i++; 
     }
   tipoalarma1=i;
-  Serial.print("i:"); Serial.println(i);
-  Serial.print("tipoalarma1:"); Serial.print(tipoalarma1);Serial.print("   ");
-  Serial.print("tipoalarma2:"); Serial.print(tipoalarma2);Serial.print("   ");
-  for (byte i=0;i<10;i++) { Serial.print(estalarma[i]); Serial.print(","); } Serial.println();
 }
 
 void procesaBC() 
@@ -154,13 +153,6 @@ void procesaBC()
   if (CALisON) consignaAct=consignaCal();
   if (REFisON) consignaAct=conf.FRO;
   if (ACSisON) consignaAct=conf.ECS;
-#ifdef DEBUG
-  // nada
-#else
-  demCAL=(Ai[0]<consignaCal();
-  demACS=(Ai[0]<conf.ECS);
-  demREF=(Ai[1]<conf.FRO);
-#endif  
   if (ACSisON) if (conf.ACS==0) pararACS();   // se apaga ACS
   if (CALisON) if (conf.Cal==0) pararCal();   // se apaga Calefacción
   if (REFisON) if (conf.Ref==0) pararRef();   // se apaga Refrigeración

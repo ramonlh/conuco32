@@ -1,3 +1,7 @@
+  // TCP codes
+  #define tcpid 1
+  #define tcpalias 2
+
 
   #define modelo 32
   #define portdefault 88
@@ -20,6 +24,7 @@
   #define maxPrgSem 8     // número de programas semanales
   #define maxPrgFec 4     // número de programas fechas
   #define maxEsc 8        // número de escenas
+  #define maxAOR 8        // número de AND-OR
   #define maxwebcalls 4   // número máximo de web calls
   #define maxparam 14     // número máximo parámetros LCD
   #define maxpaneles 10   // número máximo de paneles
@@ -51,15 +56,17 @@
   #define RX433 4 
   #define TX433 2     
 
+#define HOST_NAME "remotedebug"
+
 /** ----------------------------------------------------------------
 // definido en fichero User_Setup.h de la librería TFT_eSPI.h  
 #ifdef PCBV5
+  #define TFT_RST  -1 // Reset pin (could connect to RST pin)
+  #define TFT_DC   21 // Data Command control pin    TENGO QUE CAMBIARLO AL GPIO 2
   #define TFT_MISO 12 // pendiente probar
   #define TFT_MOSI 13
   #define TFT_SCLK 14
   #define TFT_CS   15 // Chip select control pin
-  #define TFT_DC   21 // Data Command control pin    TENGO QUE CAMBIARLO AL GPIO 2
-  #define TFT_RST  23 // Reset pin (could connect to RST pin)
   #define TOUCH_CS -1     // Chip select pin (T_CS) of touch screen
 #elif defined PCBV4
   #define TFT_RST  -1 // Reset pin (connected to RST pin)
@@ -275,12 +282,12 @@
 #define DOCK 50
 // direcciones  51-66
 #define xmlns 51             
-#define myjsoncom 52
+#define myjsoncom 52    // no usado, www.myjson.com ha desaparecido
 #define iottweetcom 53
 #define gmaps 54
 #define urliotwweet 55
 #define icanhazip 56
-#define urlapimyjson 57
+#define urlapimyjson 57  // no usado, www.myjson.com ha desaparecido
 //#define urlNTPserverpool 58
 #define iftttcom 59
 #define makeriftttcom 60
@@ -299,7 +306,7 @@
 #define device 73
 #define chipsize 74
 #define chipspeed 75
-#define dns 76
+//#define dnsx 76
 #define tmask 77
 #define modet 78
 #define gateway 79
@@ -323,7 +330,7 @@
 #define t32p 97
 #define senales 98 
 #define iottweett 99
-#define modomyjsont 100
+#define modomyjsont 100   // no usado, www.myjson.com ha desaparecido
 #define api 101
 //#define diginput 102
 #define tadmin 103
@@ -421,7 +428,7 @@
 #define lengt 194
 #define location 195
 #define logt 196
-#define idmyjsont 197
+#define idmyjsont 197   // no usado, www.myjson.com ha desaparecido
 #define namet 198
 #define nocache 199
 #define optionvalue 200 
@@ -534,3 +541,23 @@
 #define mqttdashtopic 307
 #define tlink 308
 
+#define fileconf 0
+#define filezonas 1
+#define filedevrem 2
+#define filesalrem 3
+#define filewebcall 4
+#define fileurlwebcall 5
+#define filedescprg 6
+#define filedescesc 7
+#define filedescaor 8
+#define filemacdevrem 9
+#define fileunitsalrem 10
+#define filedesclocal 11
+#define filedescgpio 12
+#define filedesctemp 13
+#define filei2ctypes 14
+#define filecommon 15
+#define filespanish 16
+#define fileenglish 17
+#define filelog 18
+#define filedash 19

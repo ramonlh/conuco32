@@ -178,7 +178,7 @@ void drawTE()   // temperaturas
   for (byte i=0;i<4;i++)
       {
       tft.setTextColor(TFT_WHITE, TFT_BLACK); tft.setTextSize(2);
-      tft.drawString(readdescr(filedesclocal,i,20),0,50*i+15);
+      tft.drawString(readdescr(confiles[filedesclocal],i,20),0,50*i+15);
       dtostrf(MbR[i]*0.01,4,1,auxdesc);
       btTE[i].initButtonUL(&tft,100,50*i,58,40,2,TFT_WHITE,TFT_BLACK,auxdesc,2);
       btTE[i].drawButton();
@@ -186,7 +186,7 @@ void drawTE()   // temperaturas
   for (byte i=4;i<maxTemp;i++)
       {
       tft.setTextColor(TFT_WHITE, TFT_BLACK); tft.setTextSize(2);
-      tft.drawString(readdescr(filedesclocal,i,20),165,50*(i-4)+15);
+      tft.drawString(readdescr(confiles[filedesclocal],i,20),165,50*(i-4)+15);
       dtostrf(MbR[i]*0.01,4,1,auxdesc);
       btTE[i].initButtonUL(&tft,265,50*(i-4),58,40,2,TFT_WHITE,TFT_BLACK,auxdesc,2);
       btTE[i].drawButton();
@@ -220,7 +220,7 @@ void drawED()   // entradas digitales
   if (conf.TFTenabled==0) return;
   for (byte i=0;i<4;i++)
     {
-    btED[i].initButtonUL(&tft,0,50*i,158,40,2,getbit8(conf.MbC8,i+8)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,readdescr(filedesclocal,i+8,20),2);
+    btED[i].initButtonUL(&tft,0,50*i,158,40,2,getbit8(conf.MbC8,i+8)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,readdescr(confiles[filedesclocal],i+8,20),2);
     btED[i].drawButton();
     tft.setTextColor(TFT_WHITE, TFT_BLACK);  tft.setTextSize(2);
     tft.drawString("      ", 180,50*i+10);
@@ -233,12 +233,12 @@ void drawSD()   // salidas digitales
   if (conf.TFTenabled==0) return;
   for (byte i=0;i<4;i++)
     {
-    btSD[i].initButtonUL(&tft,0,50*i,158,40,2,getbit8(conf.MbC8,i)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,readdescr(filedesclocal,i+12,20),2);
+    btSD[i].initButtonUL(&tft,0,50*i,158,40,2,getbit8(conf.MbC8,i)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,readdescr(confiles[filedesclocal],i+12,20),2);
     btSD[i].drawButton();
     }
   for (byte i=4;i<maxSD;i++)
     {
-    btSD[i].initButtonUL(&tft,160,50*(i-4),158,40,2,getbit8(conf.MbC8,i)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,readdescr(filedesclocal,i+12,20),2);
+    btSD[i].initButtonUL(&tft,160,50*(i-4),158,40,2,getbit8(conf.MbC8,i)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,readdescr(confiles[filedesclocal],i+12,20),2);
     btSD[i].drawButton();
     }
 }
@@ -266,8 +266,6 @@ void drawAlarma()
   byte i=0;
   while ((i<10) && (estalarma[i]==0)) { i++; }
   if (i==10) return;
-  Serial.print("i:"); Serial.print(i);
-  Serial.print("est:"); Serial.print(estalarma[i]);
   if (estalarma[i]==1)      // pendiente reconocer   
     {
     clearTFT();
@@ -308,16 +306,6 @@ void displayBtBC()
   btBC[14].drawButton();
   btBC[15].initButtonUL(&tft,260,157,60,40,2,idbc[idFrio]==1?TFT_YELLOW:TFT_LIGHTGREY,TFT_BLACK,"Frio",2);
   btBC[15].drawButton();
-}
-
-void displaybtDEM()
-{
-  btDEM[0].initButtonUL(&tft,0,135,20,20,2,demCAL==1?TFT_YELLOW:TFT_LIGHTGREY,TFT_BLACK,"C",2);
-  btDEM[0].drawButton();
-  btDEM[1].initButtonUL(&tft,20,135,20,20,2,demREF==1?TFT_YELLOW:TFT_LIGHTGREY,TFT_BLACK,"F",2);
-  btDEM[1].drawButton();
-  btDEM[2].initButtonUL(&tft,40,135,20,20,2,demACS==1?TFT_YELLOW:TFT_LIGHTGREY,TFT_BLACK,"A",2);
-  btDEM[2].drawButton();
 }
 
 void displayValBC()
@@ -365,9 +353,6 @@ void drawBC()   // principal bomba de calor
       }
     }**/
   displayBtBC();
-#ifdef DEBUG
-  displaybtDEM();     // botones pequeños que activan/desactivan prueba de temperaturas
-#endif
   displayValBC();
   displayAlarma();
 }
@@ -435,7 +420,7 @@ void drawGPIOs()   // GPIOS variables
     if (gpiovis(i))
       {
       int posy=34*j+5;
-      strcpy(auxdesc,readdescr(filedescgpio,i,20)); 
+      strcpy(auxdesc,readdescr(confiles[filedescgpio],i,20)); 
       if (conf.gpiosensortype[i]==0)     // INPUT
         {
         btGPIO[i].initButtonUL(&tft,0,34*j,180,33,2,getbit8(conf.MbC8gpio,i+16)==1?TFT_YELLOW:TFT_WHITE,TFT_BLACK,auxdesc,2);
@@ -555,14 +540,13 @@ void drawTFT()   // Setting
   if (conf.TFTenabled==0) return;
   if (conf.modofi==0)   // modo normal
     {
-    if (tftpage==0) { drawSD(); }
-    else if (tftpage==1) { drawED(); drawST(true,false);}
-    else if (tftpage==2) { drawTE(); drawST(true,false);}
-    else if (tftpage==3) { drawGPIOs(); drawST(true,false);}
-    else if (tftpage==4) { drawIP(); drawST(true,false);}
-    else if (tftpage==5) { drawSET(); drawST(true,false);}
-    else if (tftpage==6) { drawSO(); drawST(true,false);}
-    
+    if (tftpage==0) { drawSD();  drawST(true,false); }
+    else if (tftpage==1) { drawED(); drawST(true,false); }
+    else if (tftpage==2) { drawTE(); drawST(true,false); }
+    else if (tftpage==3) { drawGPIOs(); drawST(true,false); }
+    else if (tftpage==4) { drawIP(); drawST(true,false); }
+    else if (tftpage==5) { drawSET(); drawST(true,false); }
+    else if (tftpage==6) { drawSO(); drawST(true,false); }
     }
   else if (conf.modofi==1)  // bomba calor
     {
